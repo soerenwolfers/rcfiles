@@ -16,8 +16,8 @@ HISTCONTROL=ignoreboth:ignoredups:ignorespace
 shopt -s histappend
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-HISTSIZE=10000
-HISTFILESIZE=20000
+HISTSIZE=1000000
+HISTFILESIZE=1000000
 
 # check the window size after each command and, if necessary,
 # update the values of LINES and COLUMNS.
@@ -284,15 +284,15 @@ preview() {
 }
 export -f preview
 o() {
-    local inp=""
+    local inp
     local count="1"
-    local search_folder=""
-    local search_command=""
-    local choice=""
-    local file_query=""
-    local ext_command=""
-    local suffix=""
-    local started=""
+    local search_folder
+    local search_command
+    local choice
+    local file_query
+    local ext_command
+    local suffix
+    local started
     for i
     do
         count=$((count+1))
@@ -315,7 +315,6 @@ o() {
             fi
         fi
     done
-    # && [ "$inp" ]
     if [[ ( -f "$inp" ) || ( -d "$inp" ) ]]
 	then
 		autoopen "$inp" "$ext_command"
