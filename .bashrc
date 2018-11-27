@@ -74,7 +74,6 @@ xterm*|rxvt*)
 *)
     ;;
 esac
-
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
@@ -92,9 +91,11 @@ fi
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
 # some more ls aliases
-alias ll='ls -AlFh'
+ll() {
+	ls -AlFh --color=always "${@}" | cut -f4 --complement -d ' '
+}
 alias la='ls -A'
-alias l='ll --color=always'
+alias l='ll'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -197,7 +198,7 @@ create() {
 autoopen() {
     #prettypath is a prettier version of $1 but has same functionality
     local prettypath=""
-    if [ $(basename "$1") == "<NEW>" ]
+    if [ "$(basename "$1")" == "<NEW>" ]
     then 
         prettypath="\"<NEW>\"" 
     else
@@ -233,7 +234,7 @@ autoopen() {
                 then
                     expanded="$1"
                 fi
-                if [[ $(file -i $expanded|grep "x-empty\| text\|application/postscript") ]]
+                if [[ $(file -i "$expanded"|grep "x-empty\| text\|application/postscript") ]]
                 then
                     if [ -w "$1" ]; then
                         vim "$1"
