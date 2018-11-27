@@ -63,11 +63,6 @@ imap <C-l> <del>
 " Go back one word in insert mode (CTRL-O executes single normal command)
 imap <C-b> <C-o>b
 "imap <C-f> <C-o>w
-""Don't move cursor back when leaving insert mode. MESSES UP MACROS AND .
-"let CursorColumnI = 0 "the cursor column position in INSERT
-"autocmd InsertEnter * let CursorColumnI = col('.')
-"autocmd CursorMovedI * let CursorColumnI = col('.')
-"autocmd InsertLeave * if col('.') != CursorColumnI | call cursor(0, col('.')+1) | endif
 " Allow saving of files as sudo when I forgot to start vim using sudo.
 cmap w!! w !sudo tee > /dev/null %
 let mapleader = " "
@@ -117,7 +112,6 @@ nnoremap <CR> :Buffers<CR>
 nnoremap <leader>/ :Lines<CR>
 nnoremap <leader><Esc> :call <SID>writeandclosecurrentbuffer()<CR>
 nnoremap <Esc><leader> :call <SID>writeandclosecurrentbuffer()<CR>
-nnoremap <C-w> :x<CR>
 nnoremap - G
 xnoremap - G
 onoremap - G
@@ -129,7 +123,7 @@ onoremap - G
 autocmd FileType python set equalprg=autopep8\ -
 " Highlight cursorline. Unfortunately slows down a lot with vim <8.1)
 set cursorline
-hi CursorLine term=bold cterm=bold guibg=Grey40 
+hi CursorLine term=bold cterm=bold guibg=Grey40
 "hi CursorLine   cterm=NONE ctermbg=darkred ctermfg=white ctermbg=black
 " Undo beyond sessions
 set undodir="$HOME/.vim/undodir"
@@ -169,8 +163,7 @@ autocmd FileType python set foldlevel=99
 let g:ycm_autoclose_preview_window_after_completion=1
 map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 " GitGutter
-autocmd VimEnter * GitGutterLineHighlightsEnable
-let g:gitgutter_highlight_lines = 1
+"let g:gitgutter_highlight_lines = 1
 nmap ]h <Plug>GitGutterNextHunk
 nmap [h <Plug>GitGutterPrevHunk
 "Jedi-vim only for <leader>d etc. , not for completion
@@ -183,4 +176,43 @@ augroup numbertoggle
     autocmd!
     autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
     autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
+augroup END
+hi StatusLine ctermbg=black ctermfg=white 
+function! HighlightSearch(timer)
+    " When it is the first call to the function we save the current status of
+    " the StatusLine HL group so that we can restore it when we are done searching
+    if (g:firstCall)
+        let g:originalStatusLineHLGroup = execute("hi StatusLine")
+        let g:firstCall = 0
+    endif
+    if (exists("g:searching") && g:searching)
+        " The variable g:searching is set to 1, we are in the search command line
+        " make the highlighting and call the function again after a delay
+        let searchString = escape(getcmdline(), ' \')
+        let newBG = search(searchString) != 0 ? "green" : "red"
+        if (&laststatus!=2)
+            set laststatus=2
+        endif
+        execute("hi StatusLine ctermfg=" . newBG)
+        let g:highlightTimer = timer_start(300, 'HighlightSearch')
+    else
+        " The variable g:searching is either not set or set to 0, we stopped searching
+        " restore the hightlighting and stop calling the function
+        let originalBG = matchstr(g:originalStatusLineHLGroup, 'ctermfg=\zs[^ ]\+')
+        if (&laststatus!=1)
+            set laststatus=1
+        endif
+        execute("hi StatusLine ctermfg=" . originalBG)
+        if exists("g:highlightTimer")
+            call timer_stop(g:highlightTimer)
+        endif
+    endif
+endfunction
+
+" Define an autocmd to call the HighLightSearch function when we enter the search command line
+" And a second one to stop the function when we are done searching
+augroup betterSeachHighlighting
+    autocmd!
+    autocmd CmdlineEnter * if (index(['?', '/'], getcmdtype()) >= 0) | let g:searching = 1 | let g:firstCall = 1 | call timer_start(1, 'HighlightSearch') | endif
+    autocmd CmdlineLeave * let g:searching = 0
 augroup END
