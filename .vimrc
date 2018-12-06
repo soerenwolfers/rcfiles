@@ -83,6 +83,9 @@ cnoremap <C-j> <Down>
 " Run Python with F5
 autocmd FileType python nnoremap <F5> :w <bar> exec '!python ./%' <CR>
 autocmd FileType python inoremap <F5> <Esc>:w <bar> exec '!python ./%' <CR>
+" Run latex with F5
+autocmd FileType tex nnoremap <F5> :w <CR> :term latexmk -pvc <CR>
+autocmd FileType tex nnoremap <F5> <Esc> :w <CR> :term latexmk -pvc <CR>
 " Tab to switch windows
 nnoremap <Tab> <C-W>w
 nnoremap <C-W>n :vsplit<CR><C-W>w
@@ -176,12 +179,13 @@ let g:jedi#completions_enabled = 0
 " vim-easytags
 autocmd FileType python let b:easytags_auto_highlight = 0
 " Automatic relative line numbering
-set number relativenumber
-augroup numbertoggle
-    autocmd!
-    autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
-    autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
-augroup END
+"set number relativenumber
+set number 
+"augroup numbertoggle
+    "autocmd!
+    "autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
+    "autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
+"augroup END
 hi StatusLine ctermbg=black ctermfg=white 
 function! HighlightSearch(timer)
     " When it is the first call to the function we save the current status of
@@ -213,7 +217,6 @@ function! HighlightSearch(timer)
         endif
     endif
 endfunction
-
 " Define an autocmd to call the HighLightSearch function when we enter the search command line
 " And a second one to stop the function when we are done searching
 augroup betterSeachHighlighting
@@ -221,6 +224,10 @@ augroup betterSeachHighlighting
     autocmd CmdlineEnter * if (index(['?', '/'], getcmdtype()) >= 0) | let g:searching = 1 | let g:firstCall = 1 | call timer_start(1, 'HighlightSearch') | endif
     autocmd CmdlineLeave * let g:searching = 0
 augroup END
+" Execute line in terminal
+nnoremap <F9> Y<C-W>w<C-W>"0<C-W>w
+xnoremap <F9> y<C-W>w<C-W>"0<C-W>w
+"xnoremap <F9> y<C-W>w%paste<Enter><C-W>w
 " Remap H and L to beginning and end of line
 " and K to top of screen
 nnoremap H ^

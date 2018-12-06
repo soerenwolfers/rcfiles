@@ -96,6 +96,7 @@ ll() {
 }
 alias la='ls -A'
 alias l='ll'
+alias ipython='ipython --no-autoindent'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
