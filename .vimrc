@@ -69,12 +69,17 @@ let mapleader = " "
 " Enter visual line mode 
 nnoremap vv V
 xnoremap vv V
+" Quit
+noremap Q :q<Enter>
 " Move along displayed lines, not physical lines
 noremap gj j
 noremap j gj
 noremap gk k
 noremap k gk
 filetype on
+" Command mode mappings
+cnoremap <C-k> <Up>
+cnoremap <C-j> <Down>
 " Run Python with F5
 autocmd FileType python nnoremap <F5> :w <bar> exec '!python ./%' <CR>
 autocmd FileType python inoremap <F5> <Esc>:w <bar> exec '!python ./%' <CR>
@@ -216,3 +221,16 @@ augroup betterSeachHighlighting
     autocmd CmdlineEnter * if (index(['?', '/'], getcmdtype()) >= 0) | let g:searching = 1 | let g:firstCall = 1 | call timer_start(1, 'HighlightSearch') | endif
     autocmd CmdlineLeave * let g:searching = 0
 augroup END
+" Remap H and L to beginning and end of line
+" and K to top of screen
+nnoremap H ^
+nnoremap L $
+xnoremap H ^
+xnoremap L $
+nnoremap K H
+xnoremap K H
+" Center at search
+noremap n nzz
+noremap N Nzz
+noremap <C-j> <C-y>
+noremap <C-k> <C-e>
