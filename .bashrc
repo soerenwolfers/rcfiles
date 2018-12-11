@@ -338,7 +338,8 @@ o() {
             search_folder="$(pwd)"
             search_command="echo '<NEW>';"
         fi
-        search_command="$search_command find $(printf "%q" "$search_folder") -mindepth 1 2> /dev/null | sed 's|^${search_folder}/\?||'"
+        # the part in the escaped parentheses omits contents of hidden directories
+        search_command="$search_command find -L $(printf "%q" "$search_folder") \( ! -regex '.*/\..*/..*' \) -mindepth 1 2> /dev/null | sed 's|^${search_folder}/\?||'"
         choice=$(eval "$search_command"|fzf -q "$file_query" -1 --preview "preview $search_folder {}")
 		if  [ "$choice" ]	
 		then

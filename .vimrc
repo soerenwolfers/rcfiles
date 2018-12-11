@@ -17,6 +17,7 @@ Plug 'romainl/vim-cool'
 Plug 'davidhalter/jedi-vim'
 Plug 'xolox/vim-easytags'
 Plug 'xolox/vim-misc'
+Plug 'lervag/vimtex'
 call plug#end()
 let g:repl_program = {"python": "ipython"}
 "Set up Vundle
@@ -36,6 +37,8 @@ set showcmd
 "Show search
 set hlsearch
 set incsearch
+" vimtexviewer
+let g:vimtex_view_method = 'zathura'
 "Use different cursor for insert mode
 let &t_SI = "\e[6 q"
 let &t_EI = "\e[2 q"
@@ -84,8 +87,12 @@ cnoremap <C-j> <Down>
 autocmd FileType python nnoremap <F5> :w <bar> exec '!python ./%' <CR>
 autocmd FileType python inoremap <F5> <Esc>:w <bar> exec '!python ./%' <CR>
 " Run latex with F5
-autocmd FileType tex nnoremap <F5> :w <CR> :term latexmk -pvc <CR>
-autocmd FileType tex nnoremap <F5> <Esc> :w <CR> :term latexmk -pvc <CR>
+autocmd FileType tex nmap <F5> :w<CR><Plug>(vimtex-view)
+autocmd FileType tex imap <F5> <ESC>:w<CR><Plug>(vimtex-view)
+autocmd FileType tex nmap <F1> :w<CR>:VimtexCompile<CR>
+"autocmd FileType tex nnoremap <F5> :w <CR> :term latexmk -pvc <CR>
+"autocmd FileType tex inoremap <F5> <Esc> :w <CR> :term latexmk -pvc <CR>
+"autocmd FileType tex nnoremap <F1> :w <CR> :!nohup evince %:r.pdf & <CR>
 " Tab to switch windows
 nnoremap <Tab> <C-W>w
 nnoremap <C-W>n :vsplit<CR><C-W>w
@@ -193,6 +200,7 @@ function! HighlightSearch(timer)
     if (g:firstCall)
         let g:originalStatusLineHLGroup = execute("hi StatusLine")
         let g:firstCall = 0
+        let searchString = escape(getcmdline(), ' \')
     endif
     if (exists("g:searching") && g:searching)
         " The variable g:searching is set to 1, we are in the search command line
