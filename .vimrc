@@ -81,7 +81,8 @@ let mapleader = " "
 nnoremap <leader>v V
 xnoremap v V
 " Quit
-noremap Q :q<Enter>
+noremap Q :call <SID>closecurrentbuffer()<CR>
+"q<Enter>
 " Move along displayed lines, not physical lines
 noremap gj j
 noremap j gj
@@ -126,8 +127,12 @@ inoremap <C-J> <C-N>
 inoremap <C-K> <C-P>
 " fzf standard plugin (advanced fzf.vim is installed at the beginning of this script
 set rtp+=/home/linuxbrew/.linuxbrew/opt/fzf
-nnoremap \ :Files<CR>
-" To make :Buffers work with unsaved buffers, need the following line
+function! s:find_git_root()
+  return system('git rev-parse --show-toplevel 2> /dev/null')[:-2]
+endfunction
+command! ProjectFiles execute 'Files' s:find_git_root()
+nnoremap \ :ProjectFiles<CR>
+" To make :Buffers (see below) work with unsaved buffers, need the following line
 set hidden
 nnoremap <CR> :Buffers<CR>
 nnoremap <leader>/ :Lines<CR>
@@ -159,6 +164,15 @@ fun! s:writeandclosecurrentbuffer()
         bwipeout
     else
         x
+    endif 
+endfun
+fun! s:closecurrentbuffer()
+    echo "test"
+    let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
+    if bufcnt > 1
+        bdelete
+    else
+        q
     endif 
 endfun
 "Display tabs as 4 spaces
@@ -288,6 +302,11 @@ nnoremap <leader>b :call <SID>ToggleBreakpoint()<CR>
 " indent
 nnoremap > >> 
 nnoremap < <<
+"autocmd FileType python let b:foo=1
+" Change word
+"if !exists("b:foo")
+"    nnoremap <leader>r ciw
+"endif
 nnoremap ; o_<Esc>"_x
 "Relative align (l because most commonly this is like a left shift)
 nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpjddk^
