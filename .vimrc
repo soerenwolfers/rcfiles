@@ -18,6 +18,9 @@ Plug 'davidhalter/jedi-vim'
 Plug 'xolox/vim-easytags'
 Plug 'xolox/vim-misc'
 Plug 'lervag/vimtex'
+Plug 'junegunn/vim-easy-align'
+Plug 'majutsushi/tagbar'
+Plug 'tpope/vim-speeddating'
 call plug#end()
 let g:repl_program = {"python": "ipython"}
 "Set up Vundle
@@ -260,6 +263,11 @@ noremap N Nzz
 " Move one line (mode of like zz zt zb)
 noremap <C-j> <C-y>
 noremap <C-k> <C-e>
+"Easyalign
+nmap ga <Plug>(EasyAlign)
+xmap ga <Plug>(EasyAlign)
+" Tabar toggle
+nnoremap <F8> :TagbarToggle<CR>
 " Edit this file
 nnoremap <leader>ev :edit $MYVIMRC<cr>
 nnoremap <leader>ve :source $MYVIMRC<cr>
