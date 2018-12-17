@@ -37,6 +37,10 @@ set showcmd
 "Show search
 set hlsearch
 set incsearch
+" Quick macro application
+set lazyredraw
+" Line and column numbers
+set ruler
 " vimtexviewer
 let g:vimtex_view_method = 'zathura'
 "Use different cursor for insert mode
@@ -60,18 +64,19 @@ autocmd BufRead,BufNewFile *.txt  setlocal spell
 autocmd BufRead,BufNewFile *.tex  setlocal spell
 " Ignore case in search unless search term contains capital letters
 " (Must first set ignorecase before smartcase)
+" Use \c to force case-insensitive, \C to force case-sensitive
 set ignorecase
 set smartcase
 imap <C-l> <del>
 " Go back one word in insert mode (CTRL-O executes single normal command)
 imap <C-b> <C-o>b
-"imap <C-f> <C-o>w
-" Allow saving of files as sudo when I forgot to start vim using sudo.
+imap <C-f> <C-o>w
+" Allow saving of files as sudo when vim was started without sudo.
 cmap w!! w !sudo tee > /dev/null %
 let mapleader = " "
 " Enter visual line mode 
-nnoremap vv V
-xnoremap vv V
+nnoremap <leader>v V
+xnoremap v V
 " Quit
 noremap Q :q<Enter>
 " Move along displayed lines, not physical lines
@@ -110,11 +115,9 @@ nnoremap <leader>u :GundoToggle<CR>
 if has('python3')
 	let g:gundo_prefer_python3 = 1
 endif
-"Shift all the way to left
-xnoremap <leader>h :left<CR>
-nnoremap <leader>h :left<CR> 
 " Motion: Go to next capital letter
 onoremap u /\u<CR>
+xnoremap u /\u<CR>
 " Scroll through suggestions (opened with <CTRL-X><...>
 inoremap <C-J> <C-N>
 inoremap <C-K> <C-P>
@@ -126,22 +129,23 @@ set hidden
 nnoremap <CR> :Buffers<CR>
 nnoremap <leader>/ :Lines<CR>
 nnoremap <leader><Esc> :call <SID>writeandclosecurrentbuffer()<CR>
-nnoremap <Esc><leader> :call <SID>writeandclosecurrentbuffer()<CR>
+nnoremap <leader>q :call <SID>writeandclosecurrentbuffer()<CR>
 nnoremap - G
 xnoremap - G
 onoremap - G
 "When <CR> is remapped, can't use it to select items in command history,
 "unless the following two lines are used:
-:autocmd CmdwinEnter * nnoremap <CR> <CR>
-:autocmd BufReadPost quickfix nnoremap <CR> <CR>
+autocmd CmdwinEnter * nnoremap <CR> <CR>
+autocmd BufReadPost quickfix nnoremap <CR> <CR>
 " Autopep8 callable through '=' on Python files
 autocmd FileType python set equalprg=autopep8\ -
-" Highlight cursorline. Unfortunately slows down a lot with vim <8.1)
-set cursorline
-hi CursorLine term=bold cterm=bold guibg=Grey40
+" Highlight cursorline. Unfortunately slows down a lot with vim <8.1)i;
+" unfortunately, overrides background highlighting eg in quickfixlist
+" set cursorline
+" hi CursorLine term=bold cterm=bold guibg=Grey40
 "hi CursorLine   cterm=NONE ctermbg=darkred ctermfg=white ctermbg=black
 " Undo beyond sessions
-set undodir="$HOME/.vim/undodir"
+set undodir=$HOME/.vim/undodir
 set undofile
 " Open function environment in csharp
 autocmd FileType cs inoremap ;j <CR>{<CR>}<Esc>O
@@ -169,19 +173,22 @@ hi link EasyMotionTarget2Second Search
 hi link EasyMotionShade Comment
 hi link EasyMotionMoveHL Search
 hi link EasyMotionIncSearch Search
-"Save shortcut
+"Save shortcut 
 nnoremap <leader>s :up<CR>
 "
 autocmd FileType python set foldmethod=indent
 autocmd FileType python set foldlevel=99
 " YouCompleteMe
 let g:ycm_autoclose_preview_window_after_completion=1
+" I believe this is overwritten by Jedi-vim
 map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 " GitGutter
 "let g:gitgutter_highlight_lines = 1
 nmap ]h <Plug>GitGutterNextHunk
 nmap [h <Plug>GitGutterPrevHunk
-"Jedi-vim only for <leader>d etc. , not for completion
+"Jedi-vim: disable automatic popup of autocompletion. Completion is
+"still available through
+"<C-Space>
 let g:jedi#completions_enabled = 0
 " vim-easytags
 autocmd FileType python let b:easytags_auto_highlight = 0
@@ -194,6 +201,7 @@ set number
     "autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
 "augroup END
 hi StatusLine ctermbg=black ctermfg=white 
+set laststatus=2
 function! HighlightSearch(timer)
     " When it is the first call to the function we save the current status of
     " the StatusLine HL group so that we can restore it when we are done searching
@@ -207,18 +215,18 @@ function! HighlightSearch(timer)
         " make the highlighting and call the function again after a delay
         let searchString = escape(getcmdline(), ' \')
         let newBG = search(searchString) != 0 ? "green" : "red"
-        if (&laststatus!=2)
-            set laststatus=2
-        endif
+        " if (&laststatus!=2)
+        "     set laststatus=2
+        " endif
         execute("hi StatusLine ctermfg=" . newBG)
         let g:highlightTimer = timer_start(300, 'HighlightSearch')
     else
         " The variable g:searching is either not set or set to 0, we stopped searching
         " restore the hightlighting and stop calling the function
         let originalBG = matchstr(g:originalStatusLineHLGroup, 'ctermfg=\zs[^ ]\+')
-        if (&laststatus!=1)
-            set laststatus=1
-        endif
+        " if (&laststatus!=1)
+        "     set laststatus=1
+        " endif
         execute("hi StatusLine ctermfg=" . originalBG)
         if exists("g:highlightTimer")
             call timer_stop(g:highlightTimer)
@@ -242,10 +250,38 @@ nnoremap H ^
 nnoremap L $
 xnoremap H ^
 xnoremap L $
+onoremap H ^
+onoremap L $
 nnoremap K H
 xnoremap K H
 " Center at search
 noremap n nzz
 noremap N Nzz
+" Move one line (mode of like zz zt zb)
 noremap <C-j> <C-y>
 noremap <C-k> <C-e>
+" Edit this file
+nnoremap <leader>ev :edit $MYVIMRC<cr>
+nnoremap <leader>ve :source $MYVIMRC<cr>
+inoremap jk <Esc>
+"Debugging
+func! s:SetBreakpoint()
+    cal append('.', repeat(' ', strlen(matchstr(getline('.'), '^\s*'))) . 'import ipdb; ipdb.set_trace()')
+endf
+
+func! s:RemoveBreakpoint()
+    exe 'silent! g/^\s*import\sipdb\;\?\n*\s*ipdb.set_trace()/d'
+endf
+
+func! s:ToggleBreakpoint()
+    if getline('.')=~#'^\s*import\sipdb' | cal s:RemoveBreakpoint() | el | cal s:SetBreakpoint() | en
+endf
+nnoremap <leader>b :call <SID>ToggleBreakpoint()<CR>
+" indent
+nnoremap > >> 
+nnoremap < <<
+nnoremap ; o_<Esc>"_x
+"Relative align (l because most commonly this is like a left shift)
+nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpjddk^
+" Don't move cursor when switching buffers
+set nostartofline
