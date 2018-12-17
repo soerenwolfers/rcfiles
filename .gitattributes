@@ -1,1 +1,2 @@
+.pypirc merge=ours
 .gitconfig merge=ours

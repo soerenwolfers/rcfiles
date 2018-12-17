@@ -285,6 +285,7 @@ preview() {
     fi
 }
 export -f preview
+declare -a IGNOREENDINGS=(".pyc" ".aux" ".toc" ".synctex.gz" "__pycache__")
 o() {
     local inp
     local count="1"
@@ -339,7 +340,12 @@ o() {
             search_command="echo '<NEW>';"
         fi
         # the part in the escaped parentheses omits contents of hidden directories
-        search_command="$search_command find -L $(printf "%q" "$search_folder") \( ! -regex '.*/\..*/..*' \) -mindepth 1 2> /dev/null | sed 's|^${search_folder}/\?||'"
+        search_command="$search_command find -L $(printf "%q" "$search_folder") \( ! -regex '.*/\..*/..*' \) -mindepth 1 2> /dev/null"
+        for i in "${IGNOREENDINGS[@]}"
+        do
+            search_command="$search_command -not -name \"*$i\""
+        done
+        search_command="$search_command | sed 's|^${search_folder}/\?||'"
         choice=$(eval "$search_command"|fzf -q "$file_query" -1 --preview "preview $search_folder {}")
 		if  [ "$choice" ]	
 		then
