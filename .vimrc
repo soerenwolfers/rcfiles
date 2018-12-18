@@ -110,7 +110,7 @@ nnoremap <C-N> <C-I>
 nnoremap <C-S> a<C-X>s
 inoremap <C-S> <C-X>s
 " Undotree
-nnoremap <leader>u :GundoToggle<CR>
+nnoremap <F4> :GundoToggle<CR>
 " Undotree installation fix to use Python 3
 if has('python3')
 	let g:gundo_prefer_python3 = 1
@@ -248,6 +248,16 @@ augroup END
 nnoremap <F9> Y<C-W>w<C-W>"0<C-W>w
 xnoremap <F9> y<C-W>w<C-W>"0<C-W>w
 "xnoremap <F9> y<C-W>w%paste<Enter><C-W>w
+autocmd FileType python nnoremap <F10> :REPLToggle<CR>
+autocmd FileType python tnoremap <F10> <C-W>w :REPLToggle<CR>
+tnoremap <C-j> <C-w>j
+tnoremap <C-k> <C-w>k
+tnoremap <C-h> <C-w>h
+tnoremap <C-l> <C-w>l
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-h> <C-w>h
+nnoremap <C-l> <C-w>l
 " Remap H and L to beginning and end of line
 " and K to top of screen
 nnoremap H ^
@@ -262,8 +272,8 @@ xnoremap K H
 noremap n nzz
 noremap N Nzz
 " Move one line (mode of like zz zt zb)
-noremap <C-j> <C-y>
-noremap <C-k> <C-e>
+"noremap <C-j> <C-y>
+"noremap <C-k> <C-e>
 "Easyalign
 nmap ga <Plug>(EasyAlign)
 xmap ga <Plug>(EasyAlign)
@@ -289,6 +299,8 @@ nnoremap <leader>b :call <SID>ToggleBreakpoint()<CR>
 " indent
 nnoremap > >>^
 nnoremap < <<^
+xnoremap > >gv
+xnoremap < <gv
 "autocmd FileType python let b:foo=1
 " Change word
 "if !exists("b:foo")
