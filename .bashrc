@@ -439,6 +439,12 @@ __fzf_select_local__() {
   done
   echo
 }
+__fzf_select_home__() {
+    find ~ 2>/dev/null | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS" fzf -m "$@" | while read -r item; do
+    printf '%q ' "$item"
+  done
+  echo
+}
 
 fzf-file-widget() {
   local selected="$(__fzf_select__)"
@@ -447,6 +453,11 @@ fzf-file-widget() {
 }
 fzf-file-widget-local() {
   local selected="$(__fzf_select_local__)"
+  READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
+  READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
+}
+fzf-file-widget-home() {
+  local selected="$(__fzf_select_home__)"
   READLINE_LINE="${READLINE_LINE:0:$READLINE_POINT}$selected${READLINE_LINE:$READLINE_POINT}"
   READLINE_POINT=$(( READLINE_POINT + ${#selected} ))
 }
@@ -498,6 +509,7 @@ bind -m vi-command '"\eO":"i\eO"'
 # - FIXME: Selected items are attached to the end regardless of cursor position
 bind -x '"\ei": "fzf-file-widget-local"'
 bind -x '"\eI": "fzf-file-widget"'
+bind -x '"`": "fzf-file-widget-home"'
 bind -m vi-command '"\ei": "i\ei"'
 bind -m vi-command '"\eI": "i\eI"'
 
