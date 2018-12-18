@@ -21,7 +21,6 @@ call plug#begin('~/.vim/plugged')
     Plug 'junegunn/vim-easy-align'
     Plug 'majutsushi/tagbar'
     Plug 'tpope/vim-speeddating'
-    Plug 'gmarik/Vundle.vim'
     Plug 'Valloric/YouCompleteMe'
     Plug 'sjl/gundo.vim'
     Plug 'tell-k/vim-autopep8'
@@ -130,17 +129,23 @@ command! ProjectFiles execute 'Files' s:find_git_root()
 nnoremap \ :ProjectFiles<CR>
 " To make :Buffers (see below) work with unsaved buffers, need the following line
 set hidden
-nnoremap <CR> :Buffers<CR>
+nnoremap <TAB> :bn<CR>
 nnoremap <leader>/ :Lines<CR>
+ function! MyBufferList()
+   if &buftype ==# 'quickfix' || &buftype ==# 'nofile'
+     execute "normal! \<CR>"
+   else
+     Buffers
+   endif
+ endfunction
+nnoremap <silent> <CR> :call MyBufferList()<CR>
+"
 nnoremap <leader><Esc> :silent call <SID>writeandclosecurrentbuffer()<CR>
 nnoremap <leader>q :silent call <SID>writeandclosecurrentbuffer()<CR>
+"
 nnoremap - G
 xnoremap - G
 onoremap - G
-"When <CR> is remapped, can't use it to select items in command history,
-"unless the following two lines are used:
-autocmd CmdwinEnter * nnoremap <CR> <CR>
-autocmd BufReadPost quickfix nnoremap <CR> <CR>
 " Autopep8 callable through '=' on Python files
 autocmd FileType python set equalprg=autopep8\ -
 " Undo beyond sessions
@@ -194,12 +199,11 @@ map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 nmap ]h <Plug>GitGutterNextHunk
 nmap [h <Plug>GitGutterPrevHunk
 "Jedi-vim: disable automatic popup of autocompletion. Completion is
-"still available through
-"<C-Space>
+"still available through <C-Space>
 let g:jedi#completions_enabled = 0
 " vim-easytags
 autocmd FileType python let b:easytags_auto_highlight = 0
-" Automatic relative line numbering
+" line numbering
 "set number relativenumber
 set number 
 "augroup numbertoggle
@@ -222,17 +226,23 @@ function! HighlightSearch(timer)
         " The variable g:searching is set to 1, we are in the search command line
         " make the highlighting and call the function again after a delay
         let searchString = escape(getcmdline(), ' \')
-        if searchString != ""
-            let newBG = search(searchString) != 0 ? "green" : "red"
-            execute("hi StatusLine ctermfg=" . newBG)
+        if searchString == "" 
+            let searchString = "."
         endif
-        let g:highlightTimer = timer_start(300, 'HighlightSearch')
+        let newBG = search(searchString) != 0 ? "green" : "red"
+        if searchString == "."
+            set whichwrap+=h
+            normal h
+            set whichwrap-=h
+        endif
+        execute("hi StatusLine ctermfg=" . newBG)
+        let g:highlightTimer = timer_start(50, 'HighlightSearch')
     else
         " The variable g:searching is either not set or set to 0, we stopped searching
         " restore the hightlighting and stop calling the function
         let originalBG = matchstr(g:originalStatusLineHLGroup, 'ctermfg=\zs[^ ]\+')
         execute("hi StatusLine ctermfg=" . originalBG)
-        normal zz
+        "normal zz
         if exists("g:highlightTimer")
             call timer_stop(g:highlightTimer)
         endif
@@ -269,8 +279,8 @@ onoremap L $
 nnoremap K H
 xnoremap K H
 " Center at search
-noremap n nzz
-noremap N Nzz
+"noremap n nzz
+"noremap N Nzz
 " Move one line (mode of like zz zt zb)
 "noremap <C-j> <C-y>
 "noremap <C-k> <C-e>
@@ -337,3 +347,4 @@ set statusline+=%m                "modified flag
 set statusline+=%=%5l             "current line
 set statusline+=/%L               "total lines
 set statusline+=,%v             "virtual column number
+set scrolloff=5
