@@ -1,39 +1,33 @@
 "Set up vim-plug
 if empty(glob('~/.vim/autoload/plug.vim'))
-silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
-\ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+    silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+    autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 call plug#begin('~/.vim/plugged')
-Plug 'junegunn/fzf.vim'
-Plug 'tpope/vim-surround' 
-Plug 'easymotion/vim-easymotion'
-Plug 'tpope/vim-repeat'
-Plug 'tpope/vim-commentary'
-Plug 'sillybun/vim-repl', {'do': './install.sh'}
-Plug 'vim-scripts/indentpython.vim'
-Plug 'airblade/vim-gitgutter'
-Plug 'romainl/vim-cool'
-Plug 'davidhalter/jedi-vim'
-Plug 'xolox/vim-easytags'
-Plug 'xolox/vim-misc'
-Plug 'lervag/vimtex'
-Plug 'junegunn/vim-easy-align'
-Plug 'majutsushi/tagbar'
-Plug 'tpope/vim-speeddating'
+    Plug 'junegunn/fzf.vim'
+    Plug 'tpope/vim-surround' 
+    Plug 'easymotion/vim-easymotion'
+    Plug 'tpope/vim-repeat'
+    Plug 'tpope/vim-commentary'
+    Plug 'sillybun/vim-repl', {'do': './install.sh'}
+    Plug 'vim-scripts/indentpython.vim'
+    Plug 'airblade/vim-gitgutter'
+    Plug 'romainl/vim-cool'
+    Plug 'davidhalter/jedi-vim'
+    Plug 'xolox/vim-easytags'
+    Plug 'xolox/vim-misc'
+    Plug 'lervag/vimtex'
+    Plug 'junegunn/vim-easy-align'
+    Plug 'majutsushi/tagbar'
+    Plug 'tpope/vim-speeddating'
+    Plug 'gmarik/Vundle.vim'
+    Plug 'Valloric/YouCompleteMe'
+    Plug 'sjl/gundo.vim'
+    Plug 'tell-k/vim-autopep8'
+    "Try out Plug 'SirVer/ultinsips'
 call plug#end()
-let g:repl_program = {"python": "ipython"}
-"Set up Vundle
-set nocompatible 
-filetype off
-set rtp+=~/.vim/bundle/Vundle.vim
-" Autopep8 for auto format upon :Autopep8 (see shortcut below)
-call vundle#begin()
-Plugin 'gmarik/Vundle.vim'
-Plugin 'Valloric/YouCompleteMe'
-Plugin 'sjl/gundo.vim'
-Plugin 'tell-k/vim-autopep8'
-call vundle#end()
+let g:repl_program = {"python": "ipython --no-autoindent"}
 filetype plugin indent on
 "Show partial commands
 set showcmd 
@@ -44,6 +38,8 @@ set incsearch
 set lazyredraw
 " Line and column numbers
 set ruler
+" No annoying sounds
+set noerrorbells
 " vimtexviewer
 let g:vimtex_view_method = 'zathura'
 "Use different cursor for insert mode
