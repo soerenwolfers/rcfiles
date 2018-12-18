@@ -207,7 +207,7 @@ set number
     "autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
     "autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
 "augroup END
-hi StatusLine ctermbg=black ctermfg=white 
+hi StatusLine ctermbg=black ctermfg=gray 
 set laststatus=2
 " Define an autocmd to call the HighLightSearch function when we enter the search command line
 function! HighlightSearch(timer)
@@ -232,7 +232,7 @@ function! HighlightSearch(timer)
         " restore the hightlighting and stop calling the function
         let originalBG = matchstr(g:originalStatusLineHLGroup, 'ctermfg=\zs[^ ]\+')
         execute("hi StatusLine ctermfg=" . originalBG)
-
+        normal zz
         if exists("g:highlightTimer")
             call timer_stop(g:highlightTimer)
         endif
@@ -314,11 +314,11 @@ set nostartofline
 
 " Highlight cursorline. Unfortunately slows down a lot with vim <8.1)i;
 " unfortunately, overrides background highlighting eg in quickfixlist
-"hi CursorLine term=bold,underline cterm=bold,underline guibg=Grey40
-"hi CursorLine   cterm=NONE ctermbg=darkred ctermfg=white ctermbg=black
 set cursorline
-hi CursorLine cterm=bold,underline term=bold,underline ctermbg=NONE guibg=NONE 
-hi CursorLineNR cterm=bold
+hi Cursorline cterm=None
+hi CursorLineNR ctermbg=red ctermfg=white
+"hi CursorLine cterm=bold,underline ctermbg=black 
+hi CursorLineNr cterm=bold
 "augroup CLNRSet
 "     autocmd! ColorScheme * hi CursorLineNR cterm=bold
 "augroup END
@@ -329,3 +329,11 @@ function! QuickFixQuit()
     quit!
   endif
 endfunction
+set statusline+=%n            "buffer number
+set statusline+=\ %<%F\             "full path
+set statusline+=%r          "readonly flag
+set statusline+=[%{&ff}]            "file format
+set statusline+=%m                "modified flag
+set statusline+=%=%5l             "current line
+set statusline+=/%L               "total lines
+set statusline+=,%v             "virtual column number
