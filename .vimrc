@@ -162,7 +162,6 @@ fun! s:writeandclosecurrentbuffer()
     endif 
 endfun
 fun! s:closecurrentbuffer()
-    echo "test"
     let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
     if bufcnt > 1
         bdelete
@@ -227,8 +226,10 @@ function! HighlightSearch(timer)
         " The variable g:searching is set to 1, we are in the search command line
         " make the highlighting and call the function again after a delay
         let searchString = escape(getcmdline(), ' \')
-        let newBG = search(searchString) != 0 ? "green" : "red"
-        execute("hi StatusLine ctermfg=" . newBG)
+        if searchString != ""
+            let newBG = search(searchString) != 0 ? "green" : "red"
+            execute("hi StatusLine ctermfg=" . newBG)
+        endif
         let g:highlightTimer = timer_start(300, 'HighlightSearch')
     else
         " The variable g:searching is either not set or set to 0, we stopped searching
