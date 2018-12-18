@@ -77,7 +77,7 @@ let mapleader = " "
 nnoremap <leader>v V
 xnoremap v V
 " Quit
-noremap Q :call <SID>closecurrentbuffer()<CR>
+noremap Q :silent! call <SID>closecurrentbuffer()<CR>
 "q<Enter>
 " Move along displayed lines, not physical lines
 noremap gj j
@@ -132,8 +132,8 @@ nnoremap \ :ProjectFiles<CR>
 set hidden
 nnoremap <CR> :Buffers<CR>
 nnoremap <leader>/ :Lines<CR>
-nnoremap <leader><Esc> :call <SID>writeandclosecurrentbuffer()<CR>
-nnoremap <leader>q :call <SID>writeandclosecurrentbuffer()<CR>
+nnoremap <leader><Esc> :silent call <SID>writeandclosecurrentbuffer()<CR>
+nnoremap <leader>q :silent call <SID>writeandclosecurrentbuffer()<CR>
 nnoremap - G
 xnoremap - G
 onoremap - G
@@ -314,11 +314,18 @@ set nostartofline
 
 " Highlight cursorline. Unfortunately slows down a lot with vim <8.1)i;
 " unfortunately, overrides background highlighting eg in quickfixlist
-hi CursorLine term=bold,underline cterm=bold,underline guibg=Grey40
+"hi CursorLine term=bold,underline cterm=bold,underline guibg=Grey40
 "hi CursorLine   cterm=NONE ctermbg=darkred ctermfg=white ctermbg=black
 set cursorline
+hi CursorLine cterm=bold,underline term=bold,underline ctermbg=NONE guibg=NONE 
 hi CursorLineNR cterm=bold
 "augroup CLNRSet
 "     autocmd! ColorScheme * hi CursorLineNR cterm=bold
 "augroup END
-
+"
+au BufEnter * call QuickFixQuit()
+function! QuickFixQuit()
+  if &buftype=="quickfix" && winnr('$') < 2
+    quit!
+  endif
+endfunction
