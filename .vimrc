@@ -33,11 +33,23 @@ filetype plugin indent on
 """""""" Plugin configuration """"""""
 """" vimtex 
 let g:vimtex_view_method = 'zathura'
+let g:vimtex_echo_verbose_input = 0 "No jumping at cse
 """" fzf standard plugin (advanced fzf.vim is installed at the beginning of this script)
 set rtp+=/home/linuxbrew/.linuxbrew/opt/fzf
 """" vimsurround 
 let b:surround_indent = 1
+"""" vim-commentary
+function! UnmapCommentary()
+  unmap gc
+  nunmap gcc
+  nunmap gcu
+endfunction
+augroup unmapcommentary
+  autocmd!
+  autocmd VimEnter * call UnmapCommentary()
+augroup END
 """" easymotion 
+let g:EasyMotion_do_mapping=0
 hi link EasyMotionTarget Search
 hi link EasyMotionTarget2First Search
 hi link EasyMotionTarget2Second Search
@@ -50,6 +62,8 @@ let g:ycm_autoclose_preview_window_after_completion=1
 let g:jedi#completions_enabled = 0 " No automatic popup of autocompletion (still available through <C-Space>)
 """" vim-easytags 
 autocmd FileType python let b:easytags_auto_highlight = 0
+"""" vim-cool
+let g:CoolTotalMatches=1 " show #match/#total at n N
 
 """""""" Basic options """"""""
 set showcmd               " Partial commands
@@ -80,20 +94,52 @@ set incsearch
 """" Use \c to force case-insensitive, \C to force case-sensitive
 set ignorecase
 set smartcase
+if !isdirectory($HOME."/.vim")
+    call mkdir($HOME."/.vim", "", 0770)
+endif
+if !isdirectory($HOME."/.vim/undodir")
+    call mkdir($HOME."/.vim/undodir", "", 0700)
+endif
+if !isdirectory($HOME."/.vim/swapdir")
+    call mkdir($HOME."/.vim/swapdir", "", 0700)
+endif
 set undodir=$HOME/.vim/undodir " Undo beyond sessions, create undodir manually!
 set undofile
+set undolevels=10000
+set directory^=$HOME/.vim/swapdir// " Central swap direction
 let mapleader = " "
 set tabstop=4     " Display tabs as 4 spaces
 set expandtab     " Replace inserted tabs by spaces
 set shiftwidth=4  " Default indent 4 spaces
 set nostartofline " Don't move cursor when switching buffers
+set shortmess=as  " short messages and no "search hit bottom"
+set wildmenu      " Autocompletion menu in command mode
+set history=1000 " Command history
+set updatecount=20 " After how many characters is swp file written
+" Add undo option for drastic insert line change
+inoremap <C-U> <C-G>u<C-U> 
 
 """""""" Fix vim stupidity """"""""
 """" Indent commands
-nnoremap > >>^
-nnoremap < <<^
 xnoremap > >gv
 xnoremap < <gv
+func! Indent(ind)
+  if &sol
+    set nostartofline
+  endif
+  let vcol = virtcol('.')
+  if a:ind
+    norm! >>
+    exe "norm!". (vcol + shiftwidth()) . '|'
+  else
+    norm! <<
+    exe "norm!". (vcol - shiftwidth()) . '|'
+  endif
+endfunc
+nnoremap > >>^
+nnoremap < <<^
+nnoremap > :call Indent(1)<cr>
+nnoremap < :call Indent(0)<cr>
 """" Prevent quickfix window from preventing close of vim
 au BufEnter * call QuickFixQuit()
 function! QuickFixQuit()
@@ -174,16 +220,19 @@ nnoremap <leader>/ :Lines<CR>
 "au FileType python set iskeyword-=_
 
 """""""" Editing """"""""
-"autocmd FileType python let b:foo=1
-"if !exists("b:foo")
-    nnoremap <leader>r ciw
-"endif
-"""" Like o but stay in normal
-nnoremap ; o_<Esc>"_x
+"remember that :Ag opens all matching lines in repo, <Alt-A> <Alt-D> and <TAB>
+"can be used to select, and :c(f)do s/a/b/c can be used to do substitutions
+"on each quickfix entry of on each file that appears in quickfixlist
+" remember that <LEADER>r does refactoring by jedi-vim
 """" Align relative to previous line(l because most commonly this is like a left shift)
 nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpjddk^
 map <leader>j <C-D>
 map <leader>k <C-U>
+" Comment out with `, uncomment with ``. In visual mode, do both with single `
+xmap `  <Plug>Commentary
+nmap ` <Plug>CommentaryLine
+nmap `` <Plug>Commentary<Plug>Commentary
+omap ` <Plug>Commentary
 """" Always go to exact mark position
 noremap ' `
 """" Avoid jumping after aborted leader commands
@@ -244,7 +293,8 @@ fun! s:writeandclosecurrentbuffer()
     let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
     if bufcnt > 1
         update
-        bwipeout
+        bdelete
+        "bwipeout
     else
         x
     endif 
