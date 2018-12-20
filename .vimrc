@@ -1,10 +1,10 @@
-""TODO: Smarter use of ; and TAB
 if empty(glob('~/.vim/autoload/plug.vim'))
     silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
     \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
     autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
 call plug#begin('~/.vim/plugged')
+    "Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all'} " --bin instead if only needed in vim
     Plug 'junegunn/fzf.vim'
     Plug 'tpope/vim-surround' 
     Plug 'easymotion/vim-easymotion' "Only use what single character bidirectional search; check kweasy as alternative
@@ -24,11 +24,11 @@ call plug#begin('~/.vim/plugged')
     Plug 'Valloric/YouCompleteMe'
     Plug 'sjl/gundo.vim'
     Plug 'tell-k/vim-autopep8'
+    Plug 'terryma/vim-smooth-scroll'
     "Try out Plug 'SirVer/ultinsips'
 call plug#end()
 let g:repl_program = {"python": "ipython --no-autoindent"}
 filetype plugin indent on
-"filetype on
 
 """""""" Plugin configuration """"""""
 """" vimtex 
@@ -57,7 +57,7 @@ set lazyredraw            " Quick macro application
 set noerrorbells          " No annoying sounds
 let &t_SI = "\e[6 q"      " Insert mode cursor
 let &t_EI = "\e[2 q"      " Normal mode cursor
-set timeoutlen=500        " map combination delay
+set timeoutlen=300        " map combination delay
 set ttimeoutlen=0         " No delay switching to normal mode (historical reason for delay: escape was escape character, duh)
 set clipboard=unnamedplus " Store to system clipboard
 set mouse=a               " Mouse to control windows, tabs, and scrolling
@@ -69,6 +69,7 @@ set number
     "autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
     "autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
 "augroup END
+set autoread
 
 """""""" Advanced options """"""""
 set completeopt-=preview " Python completion without preview window
@@ -100,6 +101,15 @@ function! QuickFixQuit()
         quit!
     endif
 endfunction
+"""" Make autoread work in terminal vim
+if ! exists("g:CheckUpdateStarted")
+    let g:CheckUpdateStarted=1
+    call timer_start(1,'CheckUpdate')
+endif
+function! CheckUpdate(timer)
+    silent! checktime
+    call timer_start(20000,'CheckUpdate')
+endfunction
 
 """""""" Mode switches """"""""
 """" Enter visual line mode by vv
@@ -108,33 +118,44 @@ xnoremap v V
 inoremap jk <Esc>
 
 """""""" Insert mode """"""""
-"""" like x in normal 
+"""" Equivalent of x in normal, (X is <C-k> already)
 imap <C-l> <del> 
-"""" Go back one word in insert mode
+"""" Go back one word in insert mode (also use <C-D> and <C-I> ((d)edent and (i)ndent))
 imap <C-b> <C-o>b
 imap <C-f> <C-o>w
 """" Scroll through suggestions (opened with <CTRL-X><...>)
-inoremap <C-J> <C-N>
-inoremap <C-K> <C-P>
+inoremap <C-j> <C-n>
+inoremap <C-k> <C-p>
 
 """""""" Command mode """"""""
 cnoremap <C-k> <Up>
 cnoremap <C-j> <Down>
 
 """"""""" Motions """"""""
+noremap <silent> <c-u> :call smooth_scroll#up(&scroll, 10, 2)<CR>
+noremap <silent> <c-d> :call smooth_scroll#down(&scroll, 10, 2)<CR>
+noremap <silent> <c-b> :call smooth_scroll#up(&scroll*2, 20, 4)<CR>
+noremap <silent> <c-f> :call smooth_scroll#down(&scroll*2, 20, 4)<CR>
 noremap - G
+map ; <Plug>(easymotion-s)
 """" Go to next upper letter
 onoremap u /\u<CR>
 xnoremap u /\u<CR>
+"""" Inside word
+onoremap . iw
+xnoremap . iw
 """" Move along displayed lines, not physical lines
-noremap gj j
+"noremap gj j
 noremap j gj
-noremap gk k
+"noremap gk k
 noremap k gk
 """" Beginning and end of line and screen
 noremap H ^
 noremap L $
 noremap K H
+"""" Next occurence
+nnoremap f *
+nnoremap F #
 """" Between hunks
 map ]h <Plug>GitGutterNextHunk
 map [h <Plug>GitGutterPrevHunk
@@ -161,9 +182,15 @@ nnoremap <leader>/ :Lines<CR>
 nnoremap ; o_<Esc>"_x
 """" Align relative to previous line(l because most commonly this is like a left shift)
 nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpjddk^
+map <leader>j <C-D>
+map <leader>k <C-U>
+"""" Always go to exact mark position
+noremap ' `
+"""" Avoid jumping after aborted leader commands
+map <leader> <nop>
 """" Align by character
-nmap ga <Plug>(EasyAlign)
-xmap ga <Plug>(EasyAlign)
+nmap <leader>a <Plug>(EasyAlign)
+xmap <leader>a <Plug>(EasyAlign)
 """" Breakpoints
 func! s:SetBreakpoint()
     cal append('.', repeat(' ', strlen(matchstr(getline('.'), '^\s*'))) . 'import ipdb; ipdb.set_trace()')
@@ -177,13 +204,41 @@ endf
 autocmd FileType python nnoremap <leader>b :call <SID>ToggleBreakpoint()<CR>
 """" Open function environment in csharp
 autocmd FileType cs inoremap ;j <CR>{<CR>}<Esc>O
+"""" Paste in new line
+nmap <leader>p :pu<CR>
+"""" Redo
+nnoremap U <C-R>
+"""" Surround (ys comes from vim-surround)
+nmap S ys
+"""" Sensible (s)ubsistute (with target motion)
+nnoremap <expr> s ":set opfunc=SensibleSubstitute\<CR>".'"'.v:register."g@"
+function! SensibleSubstitute(type)
+  let chosen_register = v:register
+  normal `[v`]
+  call s:ProperPaste(chosen_register)
+endfunction
+function! s:ProperPaste(chosen_register)
+    if a:chosen_register==""
+        let a:chosen_register=v:register
+    endif
+    exec 'normal "_c'."\<C-r>".a:chosen_register
+endfunction
+vnoremap <silent> <expr> p <sid>ProperPaste()
+
+"""" Easyclip, basically
+" nnoremap m d
+" nnoremap M D
+" nnoremap mm dd
+" nnoremap d "_d
+" nnoremap D "_D
+" nnoremap dd "_dd
 
 """""""" Saving """"""""
 nnoremap <leader>s :up<CR>
 """" Save files as sudo when vim was started without sudo.
 cmap w!! w !sudo tee > /dev/null %
 noremap Q :silent! call <SID>closecurrentbuffer()<CR>
-nnoremap <leader><Esc> :silent call <SID>writeandclosecurrentbuffer()<CR>
+noremap ZQ :call <SID>forceclosecurrentbuffer()<CR>
 nnoremap <leader>q :silent call <SID>writeandclosecurrentbuffer()<CR>
 fun! s:writeandclosecurrentbuffer()
     let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
@@ -202,10 +257,20 @@ fun! s:closecurrentbuffer()
         q
     endif 
 endfun
+fun! s:forceclosecurrentbuffer()
+    let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
+    if bufcnt > 1
+        bdelete!
+    else
+        q!
+    endif 
+endfun
 
 """""""" Windows, buffers, and tabs """"""""
 """" Windows
 nnoremap <C-W>n :vsplit<CR><C-W>w
+nnoremap <TAB> <C-W>w
+nnoremap <S-TAB> <C-W>W
 tnoremap <C-j> <C-w>j
 tnoremap <C-k> <C-w>k
 tnoremap <C-h> <C-w>h
@@ -220,7 +285,6 @@ function! s:find_git_root()
 endfunction
 command! ProjectFiles execute 'Files' s:find_git_root()
 nnoremap \ :ProjectFiles<CR>
-nnoremap <TAB> :bn<CR>
 function! MyBufferList()
     if &buftype ==# 'quickfix' || &buftype ==# 'nofile'
         silent! execute "normal! \<CR>"
@@ -299,6 +363,7 @@ hi CursorLineNR ctermbg=red ctermfg=white cterm=bold
 
 """""""" statusline """"""""
 hi StatusLine ctermbg=black ctermfg=gray 
+hi StatusLineNC ctermbg=black ctermfg=darkgray 
 set laststatus=2
 set statusline=
 set statusline+=%n       " buffer number
