@@ -25,6 +25,11 @@ call plug#begin('~/.vim/plugged')
     Plug 'sjl/gundo.vim'
     Plug 'tell-k/vim-autopep8'
     Plug 'terryma/vim-smooth-scroll'
+    "Plug 'michaeljsmith/vim-indent-object'
+    Plug 'kana/vim-textobj-indent'
+    Plug 'kana/vim-textobj-user'
+    Plug 'soerenwolfers/diffchanges'
+    "Plug 'simnalamburt/vim-mundo'
     "Try out Plug 'SirVer/ultinsips'
 call plug#end()
 let g:repl_program = {"python": "ipython --no-autoindent"}
@@ -34,19 +39,24 @@ filetype plugin indent on
 """" vimtex 
 let g:vimtex_view_method = 'zathura'
 let g:vimtex_echo_verbose_input = 0 "No jumping at cse
-"""" fzf standard plugin (advanced fzf.vim is installed at the beginning of this script)
+"""" fzf.vim
+"" The standard fzf vim plugin is different from fzf.vim
+"" and must be made accessible by hand
 set rtp+=/home/linuxbrew/.linuxbrew/opt/fzf
+set rtp+=~/.fzf
+"""" gundo
+let g:gundo_preview_bottom = 1
 """" vimsurround 
 let b:surround_indent = 1
 """" vim-commentary
 function! UnmapCommentary()
-  unmap gc
-  nunmap gcc
-  nunmap gcu
+    unmap gc
+    nunmap gcc
+    nunmap gcu
 endfunction
 augroup unmapcommentary
-  autocmd!
-  autocmd VimEnter * call UnmapCommentary()
+    autocmd!
+    autocmd VimEnter * call UnmapCommentary()
 augroup END
 """" easymotion 
 let g:EasyMotion_do_mapping=0
@@ -66,6 +76,7 @@ autocmd FileType python let b:easytags_auto_highlight = 0
 let g:CoolTotalMatches=1 " show #match/#total at n N
 
 """""""" Basic options """"""""
+let mapleader = " "
 set showcmd               " Partial commands
 set lazyredraw            " Quick macro application
 set noerrorbells          " No annoying sounds
@@ -100,24 +111,18 @@ endif
 if !isdirectory($HOME."/.vim/undodir")
     call mkdir($HOME."/.vim/undodir", "", 0700)
 endif
-if !isdirectory($HOME."/.vim/swapdir")
-    call mkdir($HOME."/.vim/swapdir", "", 0700)
-endif
 set undodir=$HOME/.vim/undodir " Undo beyond sessions, create undodir manually!
 set undofile
 set undolevels=10000
-set directory^=$HOME/.vim/swapdir// " Central swap direction
-let mapleader = " "
 set tabstop=4     " Display tabs as 4 spaces
 set expandtab     " Replace inserted tabs by spaces
 set shiftwidth=4  " Default indent 4 spaces
 set nostartofline " Don't move cursor when switching buffers
-set shortmess=as  " short messages and no "search hit bottom"
+set shortmess+=ast  " Very unverbose vim
 set wildmenu      " Autocompletion menu in command mode
 set history=1000 " Command history
 set updatecount=20 " After how many characters is swp file written
-" Add undo option for drastic insert line change
-inoremap <C-U> <C-G>u<C-U> 
+set termguicolors
 
 """""""" Fix vim stupidity """"""""
 """" Indent commands
@@ -136,15 +141,23 @@ func! Indent(ind)
     exe "norm!". (vcol - shiftwidth()) . '|'
   endif
 endfunc
-nnoremap > >>^
-nnoremap < <<^
-nnoremap > :call Indent(1)<cr>
-nnoremap < :call Indent(0)<cr>
-"""" Prevent quickfix window from preventing close of vim
-au BufEnter * call QuickFixQuit()
+nnoremap <silent> > :call Indent(1)<cr>
+nnoremap <silent> < :call Indent(0)<cr>
+"""" Prevent quickfix and gundo window from preventing close of vim
+augroup NoPreventClose
+    autocmd!
+    au BufEnter * call QuickFixQuit()
+    au BufEnter * call GundoQuit()
+augroup END
 function! QuickFixQuit()
     if &buftype=="quickfix" && winnr('$') < 2
-        quit!
+        call <SID>closecurrentbuffer()
+    endif
+endfunction
+function! GundoQuit()
+    if &buftype=="nofile" && (@% ==# "__Gundo__" || @% ==# "__Gundo_Preview__") && winnr('$') < 3 && (@# ==# "__Gundo__" || @# ==# "__Gundo_Preview__")
+        call <SID>closecurrentbuffer()
+        call <SID>closecurrentbuffer()
     endif
 endfunction
 """" Make autoread work in terminal vim
@@ -156,12 +169,12 @@ function! CheckUpdate(timer)
     silent! checktime
     call timer_start(20000,'CheckUpdate')
 endfunction
+"""" Add undo option for drastic insert line change
+inoremap <C-U> <C-G>u<C-U> 
 
 """""""" Mode switches """"""""
 """" Enter visual line mode by vv
 xnoremap v V
-"""" Leave insert mode 
-inoremap jk <Esc>
 
 """""""" Insert mode """"""""
 """" Equivalent of x in normal, (X is <C-k> already)
@@ -177,39 +190,61 @@ inoremap <C-k> <C-p>
 cnoremap <C-k> <Up>
 cnoremap <C-j> <Down>
 
-""""""""" Motions """"""""
-noremap <silent> <c-u> :call smooth_scroll#up(&scroll, 10, 2)<CR>
-noremap <silent> <c-d> :call smooth_scroll#down(&scroll, 10, 2)<CR>
-noremap <silent> <c-b> :call smooth_scroll#up(&scroll*2, 20, 4)<CR>
-noremap <silent> <c-f> :call smooth_scroll#down(&scroll*2, 20, 4)<CR>
-noremap - G
-map ; <Plug>(easymotion-s)
-"""" Go to next upper letter
+"""""""" Range selection """"""""
+"""" To next upper letter
 onoremap u /\u<CR>
 xnoremap u /\u<CR>
 """" Inside word
 onoremap . iw
 xnoremap . iw
+"""" Inside and around indent block
+omap ai :execute "normal v\<Plug>(textobj-indent-a)ok"<CR>
+xmap <silent>ai <Plug>(textobj-indent-a)ok
+omap <silent>ii <Plug>(textobj-indent-a)
+xmap <silent>ii <Plug>(textobj-indent-a)
+"""" Inside line
+onoremap <silent> <CR> :<C-U>normal! ^v$h<CR>
+"""" First function in line
+onoremap <silent> F :<C-U>normal! 0f(hviw<CR>
+"""" Inside first parentheses on line
+onoremap <silent> A :<C-U>normal! 0f(lvi(<CR>
+
+""""""""" Motions """"""""
+map <leader>j <C-D>
+map <leader>k <C-U>
+"""" Smooth scroll
+noremap <silent> <c-u> :call smooth_scroll#up(&scroll, 15, 2)<CR>
+noremap <silent> <c-d> :call smooth_scroll#down(&scroll, 15, 2)<CR>
+noremap <silent> <c-b> :call smooth_scroll#up(&scroll*2, 15, 4)<CR>
+noremap <silent> <c-f> :call smooth_scroll#down(&scroll*2, 15, 4)<CR>
+"""" By lines
+noremap - G
+"""" By characters
+map ; <Plug>(easymotion-s)
 """" Move along displayed lines, not physical lines
-"noremap gj j
+noremap gj j
 noremap j gj
-"noremap gk k
+noremap gk k
 noremap k gk
 """" Beginning and end of line and screen
 noremap H ^
 noremap L $
 noremap K H
-"""" Next occurence
-nnoremap f *
-nnoremap F #
+"""" By math (allow pressing 4 instead of shift+4)
+omap i4 <plug>(vimtex-i$)
+omap a4 <plug>(vimtex-a$)
+"""" Next and previous occurence
+nnoremap t *
+nnoremap T #
 """" Between hunks
 map ]h <Plug>GitGutterNextHunk
 map [h <Plug>GitGutterPrevHunk
 """" Between jumps
-nnoremap <C-P> <C-O>
-nnoremap <C-N> <C-I>
-"""" By letter
-map <leader>f <Plug>(easymotion-s)
+noremap ]j <C-I>
+noremap [j <C-O>
+"""" Between changes
+noremap ]c g;
+noremap [c g,
 """" To definition (I believe this is overwritten by Jedi-vim)
 map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 nnoremap <leader>/ :Lines<CR>
@@ -223,12 +258,14 @@ nnoremap <leader>/ :Lines<CR>
 "remember that :Ag opens all matching lines in repo, <Alt-A> <Alt-D> and <TAB>
 "can be used to select, and :c(f)do s/a/b/c can be used to do substitutions
 "on each quickfix entry of on each file that appears in quickfixlist
-" remember that <LEADER>r does refactoring by jedi-vim
+" Alternatively, :args selects files per glob, and :argdo does command on them
+"
+" Remember that <leader>r does refactoring by jedi-vim
 """" Align relative to previous line(l because most commonly this is like a left shift)
-nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpjddk^
-map <leader>j <C-D>
-map <leader>k <C-U>
-" Comment out with `, uncomment with ``. In visual mode, do both with single `
+nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpj"_ddk^
+"""" Split
+nnoremap <CR>j i<CR><esc>
+"""" Comment out with `, uncomment with ``. In visual mode, do both with single `
 xmap `  <Plug>Commentary
 nmap ` <Plug>CommentaryLine
 nmap `` <Plug>Commentary<Plug>Commentary
@@ -254,7 +291,7 @@ autocmd FileType python nnoremap <leader>b :call <SID>ToggleBreakpoint()<CR>
 """" Open function environment in csharp
 autocmd FileType cs inoremap ;j <CR>{<CR>}<Esc>O
 """" Paste in new line
-nmap <leader>p :pu<CR>
+nmap <leader>p :pu<CR><leader>l
 """" Redo
 nnoremap U <C-R>
 """" Surround (ys comes from vim-surround)
@@ -286,7 +323,7 @@ vnoremap <silent> <expr> p <sid>ProperPaste()
 nnoremap <leader>s :up<CR>
 """" Save files as sudo when vim was started without sudo.
 cmap w!! w !sudo tee > /dev/null %
-noremap Q :silent! call <SID>closecurrentbuffer()<CR>
+noremap <silent> Q :silent! call <SID>closecurrentbuffer()<CR>
 noremap ZQ :call <SID>forceclosecurrentbuffer()<CR>
 nnoremap <leader>q :silent call <SID>writeandclosecurrentbuffer()<CR>
 fun! s:writeandclosecurrentbuffer()
@@ -317,6 +354,8 @@ fun! s:forceclosecurrentbuffer()
 endfun
 
 """""""" Windows, buffers, and tabs """"""""
+"" Recall that you can :mksession sessionname 
+"" and vim -S sessionname 
 """" Windows
 nnoremap <C-W>n :vsplit<CR><C-W>w
 nnoremap <TAB> <C-W>w
@@ -345,6 +384,8 @@ endfunction
 nnoremap <silent> <CR> :call MyBufferList()<CR>
 
 """""""" FX commands """"""""
+"""" Diff changes since last save
+nnoremap <F2> :DiffChangesPatchToggle<CR>
 """" Undotree
 nnoremap <F4> :GundoToggle<CR>
 if has('python3')
@@ -357,6 +398,7 @@ autocmd FileType python inoremap <F5> <Esc>:w <bar> exec '!python ./%' <CR>
 autocmd FileType tex nmap <F5> :w<CR><Plug>(vimtex-view)
 autocmd FileType tex imap <F5> <ESC>:w<CR><Plug>(vimtex-view)
 autocmd FileType tex nmap <F1> :w<CR>:VimtexCompile<CR>
+autocmd FileType tex nmap <F6> :w<CR><Plug>(vimtex-errors)
 "autocmd FileType tex nnoremap <F5> :w <CR> :term latexmk -pvc <CR>
 "autocmd FileType tex inoremap <F5> <Esc> :w <CR> :term latexmk -pvc <CR>
 "autocmd FileType tex nnoremap <F1> :w <CR> :!nohup evince %:r.pdf & <CR>
@@ -407,12 +449,13 @@ nnoremap <leader>ve :source $MYVIMRC<cr>
 """" Highlight cursorline. Unfortunately slows down a lot with vim <8.1
 """" Unfortunately, bg color overrides bg highlighting eg in quickfixlist
 set cursorline
-"hi CursorLine cterm=bold,underline ctermbg=black 
-hi Cursorline cterm=None
-hi CursorLineNR ctermbg=red ctermfg=white cterm=bold
+hi Cursorline cterm=None term=None guibg=NONE cterm=underline,bold
+hi CursorLineNR ctermbg=red ctermfg=white cterm=bold guibg=red guifg=white term=bold
+"set cursorcolumn
+"hi Cursorcolumn cterm=None term=None guibg=NONE
 
 """""""" statusline """"""""
-hi StatusLine ctermbg=black ctermfg=gray 
+hi StatusLine ctermbg=black ctermfg=white 
 hi StatusLineNC ctermbg=black ctermfg=darkgray 
 set laststatus=2
 set statusline=
