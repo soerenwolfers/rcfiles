@@ -501,8 +501,8 @@ bind '"\C-x\C-r": redraw-current-line'
 bind '"\C-x^": history-expand-line'
 
 # Alt-O - Open file 
-bind '"\eo":" \C-x\C-axddi`o \C-x\C-apa`\C-x\C-e\C-x\C-r\C-m"'
-bind '"\eO":" \C-x\C-axddi`o -/ \C-x\C-apa`\C-x\C-e\C-x\C-r\C-m"'
+bind '"\eo":" \C-x\C-axddi$(o \C-x\C-apa)\C-x\C-e\C-x\C-r\C-m"'
+bind '"\eO":" \C-x\C-axddi$(o -/ \C-x\C-apa)\C-x\C-e\C-x\C-r\C-m"'
 bind -m vi-command '"\eo":"i\eo"'
 bind -m vi-command '"\eO":"i\eO"'
 
@@ -515,12 +515,12 @@ bind -m vi-command '"\ei": "i\ei"'
 bind -m vi-command '"\eI": "i\eI"'
 
 # ALT-R - Paste the selected command from history into the command line
-bind '"\er": "\C-x\C-addi`__fzf_history__`\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
+bind '"\er": "\C-x\C-addi$( __fzf_history__ )\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
 bind -m vi-command '"\er": "i\er"'
 
 # ALT-J - cd into the selected directory
-bind '"\ej": "\C-x\C-addi`__fzf_cd_local__`\C-x\C-e\C-x\C-r\C-m"'
-bind -m vi-command '"\ej": "ddi`__fzf_cd_local__`\C-x\C-e\C-x\C-r\C-m"'
-bind '"\eJ": "\C-x\C-addi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
-bind -m vi-command '"\eJ": "ddi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
+bind '"\ej": "\C-x\C-addi$( __fzf_cd_local__ )\C-x\C-e\C-x\C-r\C-m"'
+bind -m vi-command '"\ej": "ddi$( __fzf_cd_local__ )\C-x\C-e\C-x\C-r\C-m"'
+bind '"\eJ": "\C-x\C-addi$( __fzf_cd__ )\C-x\C-e\C-x\C-r\C-m"'
+bind -m vi-command '"\eJ": "ddi$( __fzf_cd__ )\C-x\C-e\C-x\C-r\C-m"'
 
