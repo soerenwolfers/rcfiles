@@ -32,14 +32,24 @@ call plug#begin('~/.vim/plugged')
     Plug 'scrooloose/syntastic'
     Plug 'skywind3000/asyncrun.vim'
     Plug 'justinmk/vim-gtfo'
+    Plug 'vim-scripts/replacewithregister'
+    Plug 'AndrewRadev/splitjoin.vim'
+    Plug 'romainl/vim-qf'
     "Plug 'simnalamburt/vim-mundo'
     "Plug 'blueyed/vim-diminactive'
     "Try out Plug 'SirVer/ultinsips'
 call plug#end()
 let g:repl_program = {"python": "ipython --no-autoindent"}
 filetype plugin indent on
+let mapleader = " "
 
 """""""" Plugin configuration """"""""
+"""" Splitjoin
+let g:splitjoin_split_mapping = ''
+let g:splitjoin_join_mapping = ''
+nmap <leader>j 0:SplitjoinJoin<CR>
+nmap <leader>k 0:SplitjoinSplit<CR>
+
 """" syntastic
 set statusline+=%#warningmsg#
 set statusline+=%{SyntasticStatuslineFlag()}
@@ -95,7 +105,6 @@ autocmd FileType python let b:easytags_auto_highlight = 0
 let g:CoolTotalMatches=1 " show #match/#total at n N
 
 """""""" Basic options """"""""
-let mapleader = " "
 set showcmd               " Partial commands
 set lazyredraw            " Quick macro application
 set noerrorbells          " No annoying sounds
@@ -240,8 +249,8 @@ onoremap <silent> F :<C-U>normal! 0f(hviw<CR>
 onoremap <silent> A :<C-U>normal! 0f(lvi(<CR>
 
 """"""""" Motions """"""""
-map <leader>j <C-D>
-map <leader>k <C-U>
+" map <leader>j <C-D>
+" map <leader>k <C-U>
 """" Smooth scroll
 noremap <silent> <c-u> :call smooth_scroll#up(&scroll, 15, 2)<CR>
 noremap <silent> <c-d> :call smooth_scroll#down(&scroll, 15, 2)<CR>
@@ -326,27 +335,19 @@ nmap <leader>p :pu<CR><leader>l
 nnoremap U <C-R>
 """" Surround command (ys and S are provided from vim-surround)
 nmap s ys
-vmap s S
+vmap s <Plug>VSurround
 """" Surround text with latex command
 "" Recall you can already use l as surround type for latex environments
 let g:surround_{char2nr('c')} = "\\\1command\1{\r}"
-"""" Sensible (S)ubsistute (with target motion)
+"""" Sensible (S)ubstitute (with target motion), i.e. no overwrite
+"visual mode gr is provided by plugin ReplaceWithRegister
 nnoremap <expr> S ":set opfunc=SensibleSubstitute\<CR>".'"'.v:register."g@"
 function! SensibleSubstitute(type)
    let chosen_register = v:register
    normal! `[v`]
    exec 'normal! "_c'."\<C-r>".chosen_register
 endfunction
-function! s:ProperPaste(type)
-    let aaa=v:register
-    if a:type ==# 'v'
-        normal! `<v`>
-    elseif a:type == 'V'
-        normal! `[v`]
-    endif
-    exec 'normal! "_c'."\<C-r>".aaa
-endfunction
-vnoremap <silent> p :<c-u>call <sid>ProperPaste(visualmode())<cr>
+vmap S gr 
 """" Easyclip, basically
 " nnoremap m d
 " nnoremap M D
@@ -365,47 +366,52 @@ nmap zl :call <SID>startenvironment()<cr>
 nnoremap <leader>s :up<CR>
 """" Save files as sudo when vim was started without sudo.
 command SudoSave w !sudo tee >/dev/null %
-noremap Q :silent! call <SID>closecurrentbuffer()<CR>
-noremap ZQ :silent! call <SID>forceclosecurrentbuffer()<CR>
+noremap Q :call <SID>closecurrentbuffer()<CR>
+noremap ZQ :call <SID>closecurrentbuffer(1)<CR>
 nnoremap <leader>q :update<CR>:silent! call <SID>closecurrentbuffer()<CR>
-" fun! s:writeandclosecurrentbuffer()
-"     let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
-"     if bufcnt > 1
-"         update
-"         bdelete
-"     else
-"         x
-"     endif 
-" endfun
-fun! s:closecurrentbuffer()
-    if &buftype=="nofile" && @% ==# "[Command Line]"
-        q
-    elseif &buftype=="quickfix" && (w:quickfix_title =~# 'Syntastic')
-        " Unfrotunately the close command below is undone immediately if
-        " Syntastic mode is active. However, at least this puts you back to
-        " another buffer where closecurrentbuffer() can be run again.
-        lclose
+fun! s:closecurrentbuffer(...)
+    if a:0 > 0
+        let l:force=a:1
     else
-        cclose
-        lclose
-        let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
-        if bufcnt > 1
-            bdelete
+        let l:force=0
+    endif
+    if &buftype=="nofile" && @% ==# "[Command Line]"
+        if l:force
+            q!
         else
             q
+        endif
+    elseif &buftype=="quickfix" 
+        try
+            if w:quickfix_title =~# 'Syntastic'
+                " Unfortunately the close command below is undone immediately if
+                " Syntastic mode is active. However, at least this puts you back to
+                " another buffer where closecurrentbuffer() can be run again.
+                lclose
+            endif
+        catch
+            cclose
+        endtry
+    else
+        "" Uncomment the below if vim-qf is uninstalled
+        "cclose
+        "lclose
+        let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
+        if bufcnt > 1
+            if l:force
+                bdelete!
+            else
+                bdelete
+            endif
+        else
+            if l:force
+                q!
+            else
+                q
+            endif
         endif 
         call GundoQuit()
     endif
-endfun
-fun! s:forceclosecurrentbuffer()
-    cclose
-    lclose
-    let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
-    if bufcnt > 1
-        bdelete!
-    else
-        q!
-    endif 
 endfun
 
 """""""" Windows, buffers, and tabs """"""""
@@ -507,7 +513,9 @@ nmap <F12> :let $VIM_DIR=expand('%:p:h')<CR>:terminal<CR>cd $VIM_DIR<CR>
 
 """""""" Format and indentation """"""""
 au BufNewFile,BufRead *.py set tabstop=4 softtabstop=4 shiftwidth=4 textwidth=0 expandtab autoindent fileformat=unix
-autocmd FileType python set equalprg=autopep8\ -
+"Cant change equalprg to autopep8 because it messes up splitjoinsplit
+"autocmd FileType python set equalprg=autopep8\ -
+autocmd FileType python xmap = !autopep8 -<CR>
 autocmd FileType python set foldmethod=indent
 autocmd FileType python set foldlevel=99
 
