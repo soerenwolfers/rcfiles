@@ -1,4 +1,4 @@
-#TODO add flag to o to include hidden dirs
+#TODO add flag to o to include hidden dirs, work with CDPATH
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
@@ -356,6 +356,13 @@ o() {
 	fi
 }
 
+cd () {
+    if [ $# -eq  0 ]; then 
+        pushd "$HOME" &> /dev/null
+    else
+        pushd $1 &> /dev/null   #dont display current stack 
+    fi
+}
 
 -() {
     cd - > /dev/null
