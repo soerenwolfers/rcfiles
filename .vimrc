@@ -26,17 +26,29 @@ call plug#begin('~/.vim/plugged')
     Plug 'sjl/gundo.vim'
     Plug 'tell-k/vim-autopep8'
     Plug 'terryma/vim-smooth-scroll'
-    "Plug 'michaeljsmith/vim-indent-object'
     Plug 'kana/vim-textobj-indent'
     Plug 'kana/vim-textobj-user'
     Plug 'soerenwolfers/diffchanges'
+    Plug 'scrooloose/syntastic'
+    Plug 'skywind3000/asyncrun.vim'
+    Plug 'justinmk/vim-gtfo'
     "Plug 'simnalamburt/vim-mundo'
+    "Plug 'blueyed/vim-diminactive'
     "Try out Plug 'SirVer/ultinsips'
 call plug#end()
 let g:repl_program = {"python": "ipython --no-autoindent"}
 filetype plugin indent on
 
 """""""" Plugin configuration """"""""
+"""" syntastic
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_wq = 0
 """" vimtex 
 let g:vimtex_view_method = 'zathura'
 let g:vimtex_echo_verbose_input = 0 "No jumping at cse
@@ -163,19 +175,18 @@ endfunc
 nnoremap <silent> > :call Indent(1)<cr>
 nnoremap <silent> < :call Indent(0)<cr>
 """" Prevent quickfix and gundo window from preventing close of vim
-augroup NoPreventClose
-    autocmd!
-    au BufEnter * call QuickFixQuit()
-    au BufEnter * call GundoQuit()
-augroup END
-function! QuickFixQuit()
-    if &buftype=="quickfix" && winnr('$') < 2
-        call <SID>closecurrentbuffer()
-    endif
-endfunction
+" augroup NoPreventClose
+"      autocmd!
+    "au BufEnter * call QuickFixQuit()
+    "au VimEnter,BufWinEnter,BufEnter,FocusGained,WinEnter * call GundoQuit()
+" augroup END
+" function! QuickFixQuit()
+"     if &buftype=="quickfix" && winnr('$') < 2
+"         call <SID>closecurrentbuffer()
+"     endif
+" endfunction
 function! GundoQuit()
-    if &buftype=="nofile" && (@% ==# "__Gundo__" || @% ==# "__Gundo_Preview__") && winnr('$') < 3 && (@# ==# "__Gundo__" || @# ==# "__Gundo_Preview__")
-        call <SID>closecurrentbuffer()
+    if &buftype=="nofile" && (@% ==# "__Gundo__" || @% ==# "__Gundo_Preview__") && winnr('$') < 3 "&& (@# ==# "__Gundo__" || @# ==# "__Gundo_Preview__")
         call <SID>closecurrentbuffer()
     endif
 endfunction
@@ -353,29 +364,42 @@ nmap zl :call <SID>startenvironment()<cr>
 """""""" Saving """"""""
 nnoremap <leader>s :up<CR>
 """" Save files as sudo when vim was started without sudo.
-cmap w!! w !sudo tee > /dev/null %
-noremap <silent> Q :silent! call <SID>closecurrentbuffer()<CR>
-noremap ZQ :call <SID>forceclosecurrentbuffer()<CR>
-nnoremap <leader>q :silent call <SID>writeandclosecurrentbuffer()<CR>
-fun! s:writeandclosecurrentbuffer()
-    let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
-    if bufcnt > 1
-        update
-        bdelete
-        "bwipeout
-    else
-        x
-    endif 
-endfun
+command SudoSave w !sudo tee >/dev/null %
+noremap Q :silent! call <SID>closecurrentbuffer()<CR>
+noremap ZQ :silent! call <SID>forceclosecurrentbuffer()<CR>
+nnoremap <leader>q :update<CR>:silent! call <SID>closecurrentbuffer()<CR>
+" fun! s:writeandclosecurrentbuffer()
+"     let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
+"     if bufcnt > 1
+"         update
+"         bdelete
+"     else
+"         x
+"     endif 
+" endfun
 fun! s:closecurrentbuffer()
-    let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
-    if bufcnt > 1
-        bdelete
-    else
+    if &buftype=="nofile" && @% ==# "[Command Line]"
         q
-    endif 
+    elseif &buftype=="quickfix" && (w:quickfix_title =~# 'Syntastic')
+        " Unfrotunately the close command below is undone immediately if
+        " Syntastic mode is active. However, at least this puts you back to
+        " another buffer where closecurrentbuffer() can be run again.
+        lclose
+    else
+        cclose
+        lclose
+        let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
+        if bufcnt > 1
+            bdelete
+        else
+            q
+        endif 
+        call GundoQuit()
+    endif
 endfun
 fun! s:forceclosecurrentbuffer()
+    cclose
+    lclose
     let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
     if bufcnt > 1
         bdelete!
@@ -415,9 +439,30 @@ endfunction
 nnoremap <silent> <CR> :call MyBufferList()<CR>
 
 """""""" FX commands """"""""
-"""" Diff changes since last save
+"""" Start compilation with F1
+autocmd FileType tex nmap <F1> :w<CR>:VimtexCompile<CR>
+"""" Diff changes since last save with F2
 nnoremap <F2> :DiffChangesPatchToggle<CR>
-"""" Undotree
+autocmd BufReadPost * let b:undo_seq_load=changenr()
+function! DiffSinceLoad()
+    let tmpa = tempname()
+    let tmpb = tempname()
+    let curchange=changenr()
+    exe "undo " . b:undo_seq_load
+    exec 'w '.tmpa
+    exe "undo " . curchange
+    exec 'w '.tmpb
+    update
+    exec 'tabnew '.tmpa
+    diffthis
+    vert split
+    exec 'edit '.tmpb
+    diffthis
+endfunction
+command! -nargs=0 DiffSinceLoad call DiffSinceLoad()
+"""" Syntax check with F3 (location list)
+nmap <F3> :SyntasticToggleMode<CR>
+"""" Undotree with F4
 nnoremap <F4> :GundoToggle<CR>
 if has('python3')
 	let g:gundo_prefer_python3 = 1
