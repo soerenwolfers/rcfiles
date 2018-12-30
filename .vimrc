@@ -1,3 +1,4 @@
+"TODO reasonable FX for preview quickix and location list
 if empty(glob('~/.vim/autoload/plug.vim'))
     silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
     \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
@@ -56,7 +57,7 @@ let g:gundo_preview_bottom = 1
 let b:surround_indent = 1
 """" vim-commentary
 function! UnmapCommentary()
-    unmap gc
+    nunmap gc
     nunmap gcc
     nunmap gcu
 endfunction
@@ -101,6 +102,7 @@ set number
     "autocmd BufLeave,FocusLost,InsertEnter * set norelativenumber
 "augroup END
 set autoread
+set showmode
 
 """""""" Advanced options """"""""
 set completeopt-=preview " Python completion without preview window
@@ -129,6 +131,17 @@ set wildmenu      " Autocompletion menu in command mode
 set history=1000 " Command history
 set updatecount=20 " After how many characters is swp file written
 set termguicolors
+function! SetFocusedBuffer()
+    setlocal cursorline wrap
+    if &buftype!=#"nofile"
+        setlocal relativenumber
+    endif
+endfunction
+augroup BgHighlight
+    autocmd!
+    autocmd VimEnter,BufWinEnter,BufEnter,FocusGained,WinEnter * call SetFocusedBuffer()
+    autocmd WinLeave,BufLeave,FocusLost * setlocal norelativenumber nocursorline
+augroup END
 
 """""""" Fix vim stupidity """"""""
 """" Indent commands
@@ -180,7 +193,7 @@ inoremap <C-U> <C-G>u<C-U>
 
 """""""" Mode switches """"""""
 """" Enter visual line mode by vv
-xnoremap v V
+xnoremap <expr> v mode() ==# "v" ? "V" : "v"
 
 """""""" Insert mode """"""""
 """" Equivalent of x in normal, (X is <C-k> already)
@@ -228,10 +241,10 @@ noremap - G
 """" By characters
 map ; <Plug>(easymotion-s)
 """" Move along displayed lines, not physical lines
+noremap <expr> j v:count ? "j" : "gj"
 noremap gj j
-noremap j gj
+noremap <expr> k v:count ? "k" : "gk"
 noremap gk k
-noremap k gk
 """" Beginning and end of line and screen
 noremap H ^
 noremap L $
@@ -330,6 +343,12 @@ vnoremap <silent> p :<c-u>call <sid>ProperPaste(visualmode())<cr>
 " nnoremap d "_d
 " nnoremap D "_D
 " nnoremap dd "_dd
+"""" Latex
+function! s:startenvironment()
+    execute "normal o\<esc>Vsl"
+    normal o
+endfunction
+nmap zl :call <SID>startenvironment()<cr>
 
 """""""" Saving """"""""
 nnoremap <leader>s :up<CR>
@@ -404,17 +423,20 @@ if has('python3')
 	let g:gundo_prefer_python3 = 1
 endif
 """" Run Python with F5
-autocmd FileType python nnoremap <F5> :w <bar> exec '!python ./%' <CR>
-autocmd FileType python inoremap <F5> <Esc>:w <bar> exec '!python ./%' <CR>
+let $PYTHONUNBUFFERED=1
+autocmd FileType python nnoremap <S-F5> :w<CR>:AsyncRun -raw python3.5 %<CR>
+autocmd FileType python nnoremap <F5> :w<bar>exec '!python3.5 ./%'<CR>
+autocmd FileType python inoremap <S-F5> <Esc>:w<CR>:AsyncRun -raw python3.5 %<CR>
+autocmd FileType python inoremap <F5> <Esc>:w<bar>exec '!python3.5 ./%'<CR>
 """" Run latex with F5
 autocmd FileType tex nmap <F5> :w<CR><Plug>(vimtex-view)
 autocmd FileType tex imap <F5> <ESC>:w<CR><Plug>(vimtex-view)
-autocmd FileType tex nmap <F1> :w<CR>:VimtexCompile<CR>
-autocmd FileType tex nmap <F6> :w<CR><Plug>(vimtex-errors)
+"""" Show errors (Quickfix list)
+"autocmd FileType tex nmap <F6> :w<CR><Plug>(vimtex-errors)
 "autocmd FileType tex nnoremap <F5> :w <CR> :term latexmk -pvc <CR>
 "autocmd FileType tex inoremap <F5> <Esc> :w <CR> :term latexmk -pvc <CR>
 "autocmd FileType tex nnoremap <F1> :w <CR> :!nohup evince %:r.pdf & <CR>
-"""" Toggle quickfix window
+"""" Toggle quickfix window with F6
 nnoremap <F6> :call <SID>ToggleQf()<cr>
 function! s:ToggleQf()
     for buffer in tabpagebuflist()
@@ -462,7 +484,8 @@ nnoremap <leader>ve :source $MYVIMRC<cr>
 """""""" cursorline """"""""
 """" Highlight cursorline. Unfortunately slows down a lot with vim <8.1
 """" Unfortunately, bg color overrides bg highlighting eg in quickfixlist
-set cursorline
+"set cursorline
+set nocursorline
 hi Cursorline cterm=None term=None guibg=NONE cterm=underline,bold
 hi CursorLineNR ctermbg=red ctermfg=white cterm=bold guibg=red guifg=white term=bold
 "set cursorcolumn
