@@ -39,6 +39,12 @@ filetype plugin indent on
 """" vimtex 
 let g:vimtex_view_method = 'zathura'
 let g:vimtex_echo_verbose_input = 0 "No jumping at cse
+"" To fix flickering issues, try vim8
+"" Automatically start compiling when tex file is opened
+augroup vimtex_config
+  autocmd User VimtexEventInitPost !latexmk -C
+  autocmd User VimtexEventInitPost VimtexCompile
+augroup END
 """" fzf.vim
 "" The standard fzf vim plugin is different from fzf.vim
 "" and must be made accessible by hand
@@ -294,23 +300,29 @@ autocmd FileType cs inoremap ;j <CR>{<CR>}<Esc>O
 nmap <leader>p :pu<CR><leader>l
 """" Redo
 nnoremap U <C-R>
-"""" Surround (ys comes from vim-surround)
-nmap S ys
-"""" Sensible (s)ubsistute (with target motion)
-nnoremap <expr> s ":set opfunc=SensibleSubstitute\<CR>".'"'.v:register."g@"
+"""" Surround command (ys and S are provided from vim-surround)
+nmap s ys
+vmap s S
+"""" Surround text with latex command
+"" Recall you can already use l as surround type for latex environments
+let g:surround_{char2nr('c')} = "\\\1command\1{\r}"
+"""" Sensible (S)ubsistute (with target motion)
+nnoremap <expr> S ":set opfunc=SensibleSubstitute\<CR>".'"'.v:register."g@"
 function! SensibleSubstitute(type)
-  let chosen_register = v:register
-  normal `[v`]
-  call s:ProperPaste(chosen_register)
+   let chosen_register = v:register
+   normal! `[v`]
+   exec 'normal! "_c'."\<C-r>".chosen_register
 endfunction
-function! s:ProperPaste(chosen_register)
-    if a:chosen_register==""
-        let a:chosen_register=v:register
+function! s:ProperPaste(type)
+    let aaa=v:register
+    if a:type ==# 'v'
+        normal! `<v`>
+    elseif a:type == 'V'
+        normal! `[v`]
     endif
-    exec 'normal "_c'."\<C-r>".a:chosen_register
+    exec 'normal! "_c'."\<C-r>".aaa
 endfunction
-vnoremap <silent> <expr> p <sid>ProperPaste()
-
+vnoremap <silent> p :<c-u>call <sid>ProperPaste(visualmode())<cr>
 """" Easyclip, basically
 " nnoremap m d
 " nnoremap M D
@@ -423,6 +435,8 @@ xnoremap <F9> y<C-W>w<C-W>"0<C-W>w
 """" REPL
 autocmd FileType python nnoremap <F10> :REPLToggle<CR>
 autocmd FileType python tnoremap <F10> <C-W>w :REPLToggle<CR>
+"""" Terminal 
+nmap <F12> :let $VIM_DIR=expand('%:p:h')<CR>:terminal<CR>cd $VIM_DIR<CR>
 
 """""""" Format and indentation """"""""
 au BufNewFile,BufRead *.py set tabstop=4 softtabstop=4 shiftwidth=4 textwidth=0 expandtab autoindent fileformat=unix
