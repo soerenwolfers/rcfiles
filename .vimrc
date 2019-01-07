@@ -35,15 +35,23 @@ call plug#begin('~/.vim/plugged')
     Plug 'vim-scripts/replacewithregister'
     Plug 'AndrewRadev/splitjoin.vim'
     Plug 'romainl/vim-qf'
+    Plug 'tpope/vim-abolish'
+    Plug 'jeetsukumaran/vim-indentwise'
+    Plug 'wellle/visual-split.vim'
+    Plug 'bronson/vim-visual-star-search'
     "Plug 'simnalamburt/vim-mundo'
     "Plug 'blueyed/vim-diminactive'
     "Try out Plug 'SirVer/ultinsips'
+    "Try out Plug 'welle/targets.vim'
 call plug#end()
 let g:repl_program = {"python": "ipython --no-autoindent"}
 filetype plugin indent on
 let mapleader = " "
 
 """""""" Plugin configuration """"""""
+"""" Visual split
+xmap <C-W>f  <Plug>(Visual-Split-VSResize)
+xmap <C-W>s <Plug>(Visual-Split-VSSplit)
 """" Splitjoin
 let g:splitjoin_split_mapping = ''
 let g:splitjoin_join_mapping = ''
