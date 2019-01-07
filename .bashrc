@@ -15,6 +15,7 @@ HISTCONTROL=ignoreboth:ignoredups:ignorespace
 
 # append to the history file, don't overwrite it
 shopt -s histappend
+shopt -s autocd
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=1000000
@@ -225,7 +226,7 @@ autoopen() {
         then 
             cd "$1"
             #F: only scroll when necsesary, R: still show if scroll not necessary (not needed for more recent versinos of less), X: show colors
-            l|less -FRX 
+            # l|less -FRX 
         else
             if [ "$2" ]
             then
@@ -359,9 +360,15 @@ o() {
 cd () {
     if [ $# -eq  0 ]; then 
         pushd "$HOME" &> /dev/null
+    elif [ $# -eq 2 ]; then
+        if [ $1 == "--" ];then
+            pushd $2 &> /dev/null
+        fi
     else
-        pushd $1 &> /dev/null   #dont display current stack 
+        pushd $1 &> /dev/null   #dont display current stack
     fi
+    #F: only scroll when necsesary, R: still show if scroll not necessary (not needed for more recent versinos of less), X: show colors
+    l|less -FRX 
 }
 
 -() {
