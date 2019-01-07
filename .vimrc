@@ -59,13 +59,10 @@ nmap <leader>j 0:SplitjoinJoin<CR>
 nmap <leader>k 0:SplitjoinSplit<CR>
 
 """" syntastic
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
 
 let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 0
 """" vimtex 
 let g:vimtex_view_method = 'zathura'
@@ -73,8 +70,8 @@ let g:vimtex_echo_verbose_input = 0 "No jumping at cse
 "" To fix flickering issues, try vim8
 "" Automatically start compiling when tex file is opened
 augroup vimtex_config
-  autocmd User VimtexEventInitPost !latexmk -C
-  autocmd User VimtexEventInitPost VimtexCompile
+  "autocmd User VimtexEventInitPost !latexmk -C
+  "autocmd User VimtexEventInitPost VimtexCompile
 augroup END
 """" fzf.vim
 "" The standard fzf vim plugin is different from fzf.vim
@@ -218,6 +215,11 @@ function! CheckUpdate(timer)
 endfunction
 """" Add undo option for drastic insert line change
 inoremap <C-U> <C-G>u<C-U> 
+"""" Choose or yank all
+onoremap ae :<C-U>normal! ggVG<CR>
+xnoremap ae :<C-U>normal! ggVG<CR>
+"""" Copy mouse selection in terminal (right click does not work if set mouse=a is used)
+vmap <C-C> "+y
 
 """""""" Mode switches """"""""
 """" Enter visual line mode by vv
@@ -309,9 +311,34 @@ nnoremap <leader>/ :Lines<CR>
 "
 " Remember that <leader>r does refactoring by jedi-vim
 """" Align relative to previous line(l because most commonly this is like a left shift)
-nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpj"_ddk^
-"""" Split
-nnoremap <CR>j i<CR><esc>
+"" THATS WHAT "=" is for. However, this code is more strict, i.e., sometimes 
+"" "=" leaves the line as they are if there are multiple legal indents.
+"" This code however knows only one correct indenting style: the one 
+"" that the insert mode provides upon `o`
+"nnoremap <leader>l ^v$h"ldO_<esc>"_x"lpj"_ddk^
+nmap <leader>l V<leader>l
+xnoremap <expr><leader>l (mode() ==# "v" ? "V" : "" ) . "\"pc\<esc>" . ":<C-U>call <SID>properpastevisual()\<CR>"
+function! s:properpastevisual()
+    normal k
+    let temp = @p
+    let originalpaste=&paste
+    let originaltextwidth=&textwidth
+    set nopaste
+    for l:line in split(temp,"\n")
+        normal o
+        if getline(line(".")) =~ "^$"
+            normal "_dd
+            normal Ox
+            normal "_x
+        else
+            normal ^"_d$
+        endif
+        execute "normal A" . trim(l:line)
+    endfor
+    let paste = originalpaste
+    let textwidth = originaltextwidth
+    normal j"_ddk^
+endfunction
 """" Comment out with `, uncomment with ``. In visual mode, do both with single `
 xmap `  <Plug>Commentary
 nmap ` <Plug>CommentaryLine
@@ -337,25 +364,53 @@ endf
 autocmd FileType python nnoremap <leader>b :call <SID>ToggleBreakpoint()<CR>
 """" Open function environment in csharp
 autocmd FileType cs inoremap ;j <CR>{<CR>}<Esc>O
-"""" Paste in new line
-nmap <leader>p :pu<CR><leader>l
+"""" Paste in new line and with the auto indentation of vim
+nnoremap <expr> gp '`[' . strpart(getregtype(), 0, 1) . '`]'
+function! s:properpaste()
+    " let chosen_register = v:register
+    " let m = strpart(getregtype(),0,1)
+    " if m ==# 'v'
+    "     normal o
+    " endif
+    " exec 'normal! "' . chosen_register . 'p'
+    " execute "normal! `[" . m . "`]="
+    execute "let temp = @" . v:register
+    let originalpaste=&paste
+    let originaltextwidth=&textwidth
+    set nopaste
+    for l:line in split(temp,"\n")
+        normal o
+        if getline(line(".")) =~ "^$"
+            normal "_dd
+            normal Ox
+            normal "_x
+        else
+            normal ^"_d$
+        endif
+        execute "normal A" . trim(l:line)
+    endfor
+    let paste = originalpaste
+    let textwidth = originaltextwidth
+endfunction
+nmap <leader>p :call <SID>properpaste()<CR>
 """" Redo
 nnoremap U <C-R>
-"""" Surround command (ys and S are provided from vim-surround)
-nmap s ys
-vmap s <Plug>VSurround
+"""" Surround command (ys in normal mode and S in visual are provided from vim-surround)
+nmap S ys
 """" Surround text with latex command
 "" Recall you can already use l as surround type for latex environments
 let g:surround_{char2nr('c')} = "\\\1command\1{\r}"
 """" Sensible (S)ubstitute (with target motion), i.e. no overwrite
-"visual mode gr is provided by plugin ReplaceWithRegister
-nnoremap <expr> S ":set opfunc=SensibleSubstitute\<CR>".'"'.v:register."g@"
-function! SensibleSubstitute(type)
-   let chosen_register = v:register
-   normal! `[v`]
-   exec 'normal! "_c'."\<C-r>".chosen_register
-endfunction
-vmap S gr 
+"" visual mode gr is provided by plugin ReplaceWithRegister
+vmap R gr
+nmap R gr
+"" The below is almost equivalent but less stable as gr
+" nnoremap <expr> R ":set opfunc=SensibleSubstitute\<CR>".'"'.v:register."g@"
+" function! SensibleSubstitute(type)
+"    let chosen_register = v:register
+"    normal! `[v`]
+"    exec 'normal! "_c'."\<C-r>".chosen_register
+" endfunction
 """" Easyclip, basically
 " nnoremap m d
 " nnoremap M D
@@ -373,7 +428,7 @@ nmap zl :call <SID>startenvironment()<cr>
 """""""" Saving """"""""
 nnoremap <leader>s :up<CR>
 """" Save files as sudo when vim was started without sudo.
-command SudoSave w !sudo tee >/dev/null %
+command! SudoSave w !sudo tee >/dev/null %
 noremap Q :call <SID>closecurrentbuffer()<CR>
 noremap ZQ :call <SID>closecurrentbuffer(1)<CR>
 nnoremap <leader>q :update<CR>:silent! call <SID>closecurrentbuffer()<CR>
@@ -383,43 +438,51 @@ fun! s:closecurrentbuffer(...)
     else
         let l:force=0
     endif
-    if &buftype=="nofile" && @% ==# "[Command Line]"
+    if winnr('$') > 1
         if l:force
             q!
         else
             q
         endif
-    elseif &buftype=="quickfix" 
-        try
-            if w:quickfix_title =~# 'Syntastic'
-                " Unfortunately the close command below is undone immediately if
-                " Syntastic mode is active. However, at least this puts you back to
-                " another buffer where closecurrentbuffer() can be run again.
-                lclose
-            endif
-        catch
-            cclose
-        endtry
     else
-        "" Uncomment the below if vim-qf is uninstalled
-        "cclose
-        "lclose
-        let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
-        if bufcnt > 1
-            if l:force
-                bdelete!
-            else
-                bdelete
-            endif
-        else
+        if &buftype=="nofile" && @% ==# "[Command Line]"
             if l:force
                 q!
             else
                 q
             endif
-        endif 
-        call GundoQuit()
+        elseif &buftype=="quickfix" 
+            try
+                if w:quickfix_title =~# 'Syntastic'
+                    " Unfortunately the close command below is undone immediately if
+                    " Syntastic mode is active. However, at least this puts you back to
+                    " another buffer where closecurrentbuffer() can be run again.
+                    lclose
+                endif
+            catch
+                cclose
+            endtry
+        else
+            "" Uncomment the below if vim-qf is uninstalled
+            "cclose
+            "lclose
+            let bufcnt = len(filter(range(1, bufnr('$')), 'buflisted(v:val)'))
+            if bufcnt > 1
+                if l:force
+                    bdelete!
+                else
+                    bdelete
+                endif
+            else "bdelete would result in a new empty buffer instead of closing vim
+                if l:force
+                    q!
+                else
+                    q
+                endif
+            endif 
+        endif
     endif
+    call GundoQuit()
 endfun
 
 """""""" Windows, buffers, and tabs """"""""
@@ -457,6 +520,7 @@ nnoremap <silent> <CR> :call MyBufferList()<CR>
 autocmd FileType tex nmap <F1> :w<CR>:VimtexCompile<CR>
 """" Diff changes since last save with F2
 nnoremap <F2> :DiffChangesPatchToggle<CR>
+"""" Diff changes since file was opened with S-F2
 autocmd BufReadPost * let b:undo_seq_load=changenr()
 function! DiffSinceLoad()
     let tmpa = tempname()
@@ -474,6 +538,7 @@ function! DiffSinceLoad()
     diffthis
 endfunction
 command! -nargs=0 DiffSinceLoad call DiffSinceLoad()
+nnoremap <S-F2> :DiffSinceLoad<CR>
 """" Syntax check with F3 (location list)
 nmap <F3> :SyntasticToggleMode<CR>
 """" Undotree with F4
@@ -538,7 +603,17 @@ autocmd BufRead,BufNewFile *.tex  setlocal spell
 
 """""""" .vimrc """"""""
 nnoremap <leader>ev :edit $MYVIMRC<cr>
-nnoremap <leader>ve :source $MYVIMRC<cr>
+function! s:SaveVimRC()
+    let l:rc = $MYVIMRC
+    let l:brc = bufnr(l:rc)
+    let l:bc = bufnr("%")
+    if l:brc>0
+        execute "buffer " . l:brc
+        update
+        execute "buffer " . l:bc
+    endif
+endfunction
+nnoremap <leader>ve :call <SID>SaveVimRC()<CR>:source $MYVIMRC<CR>
 
 """""""""""""""""""""""""""""""""""" LOOKS """""""""""""""""""""""""""""""""""
 
@@ -565,6 +640,10 @@ set statusline+=%m       " modified flag
 set statusline+=%=%5l    " current line
 set statusline+=/%L      " total lines
 set statusline+=,\ %v      " virtual column number
+"" Syntastic status
+" set statusline+=%#warningmsg#
+" set statusline+=%{SyntasticStatuslineFlag()}
+" set statusline+=%*
 set scrolloff=5
 function! HighlightSearch(timer)
     if (g:firstCall)
