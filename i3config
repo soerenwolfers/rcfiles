@@ -151,17 +151,17 @@ bindsym $mod+r mode "resize"
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
 bar {
-        status_command i3status
+        status_command py3status
         tray_output primary
         position top
 }
 
 ######
-exec --no-startup-id setxkbmap -option caps:escape
+exec --no-startup-id setxkbmap -layout us -option caps:escape
 #setxkbmap -layout us -option caps:escape
 #setxkbmap -option 'caps:escape'
 exec --no-startup-id synclient HorizEdgeScroll=1 VertEdgeScroll=1 VertScrollDelta=-111
-#exec --no-startup-id setxkbmap -layout us -variant abnt2 -option caps:escape
+#exec --no-startup-id setxkbmap -layout us 
 #
 
 set $mode_system System (l) lock, (e) logout, (s) suspend, (h) hibernate, (r) reboot, (Shift+s) shutdown
@@ -216,6 +216,11 @@ assign [class="Google Chrome"] $wswww
 assign [window_role="browser"] $wswww
 #for_window [class="TeamViewer"] move container to workspace 9
 #for_window [class="Google-chrome"] move container to workspace $wswww
-exec teamviewer
+#exec teamviewer
 exec google-chrome
 bindsym $mod+plus grow width 10px or 10ppt
+
+#use udevil devmon for mounting
+bindsym $mod+i exec /home/wolfersf/Dropbox/professional/programming/Python/insights/insights.py
+bindsym $mod+c move absolute position center
+for_window [title="Insights"] floating enable, move absolute position center, sticky enable
