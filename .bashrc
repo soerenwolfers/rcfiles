@@ -1,3 +1,4 @@
+#TODO add flag to o to include hidden dirs, work with CDPATH
 # ~/.bashrc: executed by bash(1) for non-login shells.
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
@@ -14,6 +15,7 @@ HISTCONTROL=ignoreboth:ignoredups:ignorespace
 
 # append to the history file, don't overwrite it
 shopt -s histappend
+shopt -s autocd
 
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=1000000
@@ -58,8 +60,10 @@ fi
 
 if [ "$color_prompt" = yes ]; then
     #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-    PS1='\[\033[01;34m\]\w\[\033[00m\]\$ '
+    #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    #PS1='\[\033[01;34m\]\w\[\033[00m\]\D{%H:%M}\$ '
+    PROMPT_COMMAND='PS1X=$(p="${PWD#${HOME}}"; [ "${PWD}" != "${p}" ] && printf "~";IFS=/; comps=(); for z in ${p:1}; do comps+=(${z:0:3}); done; final=${z:3}; IFS=" "; if [ ${#comps[@]} -gt 4 ]; then printf "/..."; dirs=${comps[@]: -3}; else dirs=${comps[@]}; fi; for q in $dirs; do printf /$q; done; printf "$final")'
+    PS1='\D{%H:%M}\[\033[01;34m\]${PS1X}\[\033[00m\]\$ '
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
 fi
@@ -224,7 +228,7 @@ autoopen() {
         then 
             cd "$1"
             #F: only scroll when necsesary, R: still show if scroll not necessary (not needed for more recent versinos of less), X: show colors
-            l|less -FRX 
+            # l|less -FRX 
         else
             if [ "$2" ]
             then
@@ -355,6 +359,19 @@ o() {
 	fi
 }
 
+cd () {
+    if [ $# -eq  0 ]; then 
+        pushd "$HOME" &> /dev/null
+    elif [ $# -eq 2 ]; then
+        if [ $1 == "--" ];then
+            pushd $2 &> /dev/null
+        fi
+    else
+        pushd $1 &> /dev/null   #dont display current stack
+    fi
+    #F: only scroll when necsesary, R: still show if scroll not necessary (not needed for more recent versinos of less), X: show colors
+    l|less -FRX 
+}
 
 -() {
     cd - > /dev/null
@@ -500,8 +517,8 @@ bind '"\C-x\C-r": redraw-current-line'
 bind '"\C-x^": history-expand-line'
 
 # Alt-O - Open file 
-bind '"\eo":" \C-x\C-axddi`o \C-x\C-apa`\C-x\C-e\C-x\C-r\C-m"'
-bind '"\eO":" \C-x\C-axddi`o -/ \C-x\C-apa`\C-x\C-e\C-x\C-r\C-m"'
+bind '"\eo":" \C-x\C-axddi$(o \C-x\C-apa)\C-x\C-e\C-x\C-r\C-m"'
+bind '"\eO":" \C-x\C-axddi$(o -/ \C-x\C-apa)\C-x\C-e\C-x\C-r\C-m"'
 bind -m vi-command '"\eo":"i\eo"'
 bind -m vi-command '"\eO":"i\eO"'
 
@@ -514,12 +531,12 @@ bind -m vi-command '"\ei": "i\ei"'
 bind -m vi-command '"\eI": "i\eI"'
 
 # ALT-R - Paste the selected command from history into the command line
-bind '"\er": "\C-x\C-addi`__fzf_history__`\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
+bind '"\er": "\C-x\C-addi$( __fzf_history__ )\C-x\C-e\C-x\C-r\C-x^\C-x\C-a$a"'
 bind -m vi-command '"\er": "i\er"'
 
 # ALT-J - cd into the selected directory
-bind '"\ej": "\C-x\C-addi`__fzf_cd_local__`\C-x\C-e\C-x\C-r\C-m"'
-bind -m vi-command '"\ej": "ddi`__fzf_cd_local__`\C-x\C-e\C-x\C-r\C-m"'
-bind '"\eJ": "\C-x\C-addi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
-bind -m vi-command '"\eJ": "ddi`__fzf_cd__`\C-x\C-e\C-x\C-r\C-m"'
+bind '"\ej": "\C-x\C-addi$( __fzf_cd_local__ )\C-x\C-e\C-x\C-r\C-m"'
+bind -m vi-command '"\ej": "ddi$( __fzf_cd_local__ )\C-x\C-e\C-x\C-r\C-m"'
+bind '"\eJ": "\C-x\C-addi$( __fzf_cd__ )\C-x\C-e\C-x\C-r\C-m"'
+bind -m vi-command '"\eJ": "ddi$( __fzf_cd__ )\C-x\C-e\C-x\C-r\C-m"'
 
