@@ -711,7 +711,6 @@ function! HighlightSearch(timer)
     endif
     if (exists("g:searching") && g:searching)
         let searchString = getcmdline()
-        echom searchString
         if searchString == "" 
             let searchString = "."
         endif
@@ -723,15 +722,29 @@ function! HighlightSearch(timer)
         endif
         execute("hi StatusLine ctermfg=" . newBG)
         let g:highlightTimer = timer_start(50, 'HighlightSearch')
+        let g:searchString = searchString
     else
         let originalBG = matchstr(g:originalStatusLineHLGroup, 'ctermfg=\zs[^ ]\+')
         execute("hi StatusLine ctermfg=" . originalBG)
-        "normal zz
         if exists("g:highlightTimer")
             call timer_stop(g:highlightTimer)
+            call HighlightCursorMatch()
+            " call timer_start(2000,'UnmatchSearch')
         endif
     endif
 endfunction
+" function! UnmatchSearch(...)
+"     match
+" endfunction
+function! HighlightCursorMatch() 
+    try
+        let l:patt = '\%#'
+        if &ic | let l:patt = '\c' . l:patt | endif
+        exec 'match IncSearch /' . l:patt . g:searchString . '/'
+    endtry
+endfunction
+nnoremap n n:call HighlightCursorMatch()<CR>
+nnoremap N N:call HighlightCursorMatch()<CR>
 augroup betterSeachHighlighting
     autocmd!
     autocmd CmdlineEnter * if (index(['?', '/'], getcmdtype()) >= 0) | let g:searching = 1 | let g:firstCall = 1 | call timer_start(1, 'HighlightSearch') | endif
