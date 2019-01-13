@@ -62,7 +62,7 @@ if [ "$color_prompt" = yes ]; then
     #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
     #PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
     #PS1='\[\033[01;34m\]\w\[\033[00m\]\D{%H:%M}\$ '
-    PROMPT_COMMAND='PS1X=$(p="${PWD#${HOME}}"; [ "${PWD}" != "${p}" ] && printf "~";IFS=/; comps=(); for z in ${p:1}; do comps+=(${z:0:3}); done; final=${z:3}; IFS=" "; if [ ${#comps[@]} -gt 4 ]; then printf "/..."; dirs=${comps[@]: -3}; else dirs=${comps[@]}; fi; for q in $dirs; do printf /$q; done; printf "$final")'
+    PROMPT_COMMAND='PS1X=$(p="${PWD#${HOME}}"; [ "${PWD}" != "${p}" ] && printf "~";IFS=/; comps=(); for z in ${p:1}; do comps+=(${z:0:3}); done; final=${z:3}; IFS=" "; if [ ${#comps[@]} -gt 4 ]; then printf "/..."; dirs=${comps[@]: -3}; else dirs=${comps[@]}; fi; for q in $dirs; do printf "%s" "/$q"; done;printf "%s" "$final") '
     PS1='\D{%H:%M}\[\033[01;34m\]${PS1X}\[\033[00m\]\$ '
 else
     PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
@@ -239,7 +239,7 @@ autoopen() {
                 then
                     expanded="$1"
                 fi
-                if [[ $(file -i "$expanded"|grep "x-empty\| text\|application/postscript") ]]
+                if [[ $(file -i "$expanded"|grep "x-empty\| text\|application/postscript \|charset=binary") ]]
                 then
                     if [ -w "$1" ]; then
                         vim "$1"
