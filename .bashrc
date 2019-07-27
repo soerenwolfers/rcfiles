@@ -96,7 +96,7 @@ fi
 
 # some more ls aliases
 ll() {
-	ls -AlFh --color=always "${@}" | cut -f4 --complement -d ' '
+	ls -AlFhG --color=always "${@}" 
 }
 alias la='ls -A'
 alias l='ll'
@@ -220,7 +220,7 @@ autoopen() {
     then
         echo o "$prettypath"
     else
-        history -s o "$prettypath"
+        history -s "o $prettypath"
         if [[ $(basename "$1") == "<NEW>" ]]
         then
             create 
@@ -239,7 +239,7 @@ autoopen() {
                 then
                     expanded="$1"
                 fi
-                if [[ $(file -i "$expanded"|grep "x-empty\| text\|application/postscript \|charset=binary") ]]
+                if [[ $(file -i "$expanded"|grep "x-empty\| text\|application/postscript") ]]
                 then
                     if [ -w "$1" ]; then
                         vim "$1"
@@ -300,6 +300,7 @@ o() {
     local ext_command
     local suffix
     local started
+    history -s "o ${@}"
     for i
     do
         count=$((count+1))
@@ -349,8 +350,15 @@ o() {
         do
             search_command="$search_command -not -name \"*$i\""
         done
+        tmp_fifo=$(mktemp -u)
+        mkfifo "$tmp_fifo"
         search_command="$search_command | sed 's|^${search_folder}/\?||'"
-        choice=$(eval "$search_command"|fzf -q "$file_query" -1 --preview "preview $search_folder {}")
+        { eval "$search_command">"$tmp_fifo" & } 2>/dev/null
+        disown
+        choice="$(fzf -q "$file_query" -1 --preview "preview $search_folder {}" < $tmp_fifo)"
+        { kill $! &} >/dev/null 2>/dev/null
+        disown
+        ( rm "$tmp_fifo" )
 		if  [ "$choice" ]	
 		then
             choice="$search_folder"/"$choice"
@@ -540,3 +548,20 @@ bind -m vi-command '"\ej": "ddi$( __fzf_cd_local__ )\C-x\C-e\C-x\C-r\C-m"'
 bind '"\eJ": "\C-x\C-addi$( __fzf_cd__ )\C-x\C-e\C-x\C-r\C-m"'
 bind -m vi-command '"\eJ": "ddi$( __fzf_cd__ )\C-x\C-e\C-x\C-r\C-m"'
 
+# added by Anaconda3 2018.12 installer
+# >>> conda init >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$(CONDA_REPORT_ERRORS=false '/home/wolfersf/anaconda3/bin/conda' shell.bash hook 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    \eval "$__conda_setup"
+else
+    if [ -f "/home/wolfersf/anaconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/wolfersf/anaconda3/etc/profile.d/conda.sh"
+        CONDA_CHANGEPS1=false conda activate base
+    else
+        \export PATH="/home/wolfersf/anaconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda init <<<
+#export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libgtk3-nocsd.so.0

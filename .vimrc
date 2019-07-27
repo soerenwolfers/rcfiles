@@ -51,20 +51,17 @@ let mapleader = " "
 """""""""""""""""""""""""""""""" Plugin configuration """"""""""""""""""""""""""""""""  
 ""                                                                             vim-hardtime 
 let g:hardtime_showmsg=1
-let g:hardtime_default_on=1
+" let g:hardtime_default_on=1
 ""                                                                             vim-qf
 ""                                                                       (stop interference with vimtex)
 let g:qf_auto_open_quickfix = 0 
-""                                                                        Visual split
-xmap <C-W>f  <Plug>(Visual-Split-VSResize)
-xmap <C-W>s <Plug>(Visual-Split-VSSplit)
 ""                                                                          Splitjoin
 let g:splitjoin_split_mapping = ''
 let g:splitjoin_join_mapping = ''
 nmap <leader>j 0:SplitjoinJoin<CR>
 nmap <leader>k 0:SplitjoinSplit<CR>
 ""                                                                          ale
-
+" let g:ale_set_signs=0
 ""                                                                          vimtex 
 ""                                                                    (stop interference with qf)
 let g:vimtex_quickfix_mode = 0
@@ -103,6 +100,7 @@ hi link EasyMotionTarget2Second Search
 hi link EasyMotionShade Comment
 hi link EasyMotionMoveHL Search
 hi link EasyMotionIncSearch Search
+let g:EasyMotion_keys = "asdfjkl;eiwonvp;:[]"
 ""                                                                      YouCompleteMe 
 let g:ycm_autoclose_preview_window_after_completion=1
 ""                                                                      Jedi-vim 
@@ -162,8 +160,9 @@ set history=1000 " Command history
 set updatecount=20 " After how many characters is swp file written
 set termguicolors
 function! SetFocusedBuffer()
-    setlocal cursorline wrap
-    if &buftype!=#"nofile"
+    setlocal cursorline 
+    setlocal wrap
+    if &buftype!=#"nofile" && &number
         setlocal relativenumber
     endif
 endfunction
@@ -255,8 +254,11 @@ cnoremap <C-j> <Down>
 onoremap u /\u<CR>
 xnoremap u /\u<CR>
 ""                                                                      Inside word
-onoremap . iw
-xnoremap . iw
+" onoremap . iw
+" xnoremap . iw
+onoremap w iw
+" nnoremap cw ciw
+nnoremap dw daw
 ""                                                                      Inside and around indent block
 omap ai :execute "normal v\<Plug>(textobj-indent-a)ok"<CR>
 xmap <silent>ai <Plug>(textobj-indent-a)ok
@@ -270,8 +272,38 @@ onoremap <silent> F :<C-U>normal! 0f(hviw<CR>
 onoremap <silent> A :<C-U>normal! 0f(lvi(<CR>
 
 """""""""""""""""""""""""""""""" Motions """""""""""""""""""""""""""""""" 
+""                                                                      Fix w and W
+function s:mywordmovement(letter)
+    normal! mw
+    execute "normal!" . a:letter
+    let cc=getline('.')[col('.')-1] 
+    let t = 5
+    let found = 0
+    while t>0
+        let t=t-1
+        if cc !~# '[a-zA-Z0-9]'
+            execute "normal!" . a:letter
+            let cc=getline('.')[col('.')-1] 
+        else
+            let found = 1
+            let t = 0
+        endif
+    endwhile
+    if !found
+        normal! `w
+    endif
+endfunction
+onoremap W :call <SID>mywordmovement("w")<CR>
+nnoremap W :call <SID>mywordmovement("w")<CR>
+nnoremap B :call <SID>mywordmovement("b")<CR>
+onoremap B :call <SID>mywordmovement("b")<CR>
+nnoremap E :call <SID>mywordmovement("e")<CR>
+onoremap E :call <SID>mywordmovement("e")<CR>
+" nnoremap h b
+" nnoremap l w
 "" It makes no sense to try to keep the cursor where it is (with <C-Y>)
 "" Because of vim's cursor model, this fails after one page anyway.
+""                                                                 Fix C-U and C-D
 function! s:myDown()
     let h=winheight('.')
     let l=h/5
@@ -305,6 +337,31 @@ endfunction
 noremap <silent> <c-b> :call <SID>mySmoothUp()<CR>
 noremap <silent> <c-f> :call <SID>mySmoothDown()<CR>
 ""                                                                      By lines
+function! s:contextn(direction)
+    let l:start=line("w0")
+    let end = line("w$")
+    let cursor = line(".")
+    let from_top = cursor-l:start
+    if a:direction
+        silent! normal! n
+    else
+        silent normal! N
+    endif
+    let new_start = line("w0")
+    let new_end = line("w$")
+    let new_cursor = line(".")
+    let new_from_top = new_cursor-new_start
+    if new_from_top>from_top
+        for i in range(new_from_top-from_top)
+            execute "normal! \<C-e>"
+        endfor
+    else
+        for i in range(from_top-new_from_top)
+            execute "normal! \<C-y>"
+        endfor
+    endif
+endfunction
+""
 noremap - G
 ""                                                                      By characters
 map ; <Plug>(easymotion-s)
@@ -342,6 +399,7 @@ nnoremap <leader>/ :Lines<CR>
 "noremap N Nzz
 ""                                                                     Change definition of <word>
 "au FileType python set iskeyword-=_
+au FileType tex set iskeyword-=\
 
 """""""""""""""""""""""""""""""" Editing """""""""""""""""""""""""""""""" 
 "remember that :Ag opens all matching lines in repo, <Alt-A> <Alt-D> and <TAB>
@@ -350,6 +408,7 @@ nnoremap <leader>/ :Lines<CR>
 " Alternatively, :args selects files per glob, and :argdo does command on them
 "
 " Remember that <leader>r does refactoring by jedi-vim
+
 ""                                                                     Align relative to previous line
 ""                                                                     (l because commonly results in left shift)
 "" THATS WHAT "=" is for. However, this code is more strict, i.e., sometimes 
@@ -380,6 +439,9 @@ function! s:properpastevisual()
     let textwidth = originaltextwidth
     normal j"_ddk^
 endfunction
+""                                                                             Extend word with e
+" nnoremap e ea
+" nnoremap E Ea
 ""                                                                        Commenting
 xmap `  <Plug>Commentary
 nmap ` <Plug>CommentaryLine
@@ -544,6 +606,8 @@ nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-h> <C-w>h
 nnoremap <C-l> <C-w>l
+xmap <C-W>f  <Plug>(Visual-Split-VSResize)
+xmap <C-W>s <Plug>(Visual-Split-VSSplit)
 ""                                                                      Buffers
 function! s:find_git_root()
     return system('git rev-parse --show-toplevel 2> /dev/null')[:-2]
@@ -587,9 +651,9 @@ endfunction
 command! -nargs=0 DiffSinceLoad call DiffSinceLoad()
 nnoremap <S-F2> :DiffSinceLoad<CR>
 ""                                                                      Syntax check with F3 (location list)
-" nmap <F3> :SyntasticCheck<CR>
+map <F3> :ALEToggle<CR>
 ""                                                                      Undotree with F4
-nnoremap <F4> :GundoToggle<CR>
+map <F4> :GundoToggle<CR>
 if has('python3')
 	let g:gundo_prefer_python3 = 1
 endif
@@ -683,12 +747,10 @@ nmap <leader>9 :set foldlevel=9<CR>
 """""""""""""""""""""""""""""""" cursorline """"""""""""""""""""""""""""""""
 ""                                                                    Highlight cursorline
 """" Unfortunately, bg color overrides bg highlighting eg in quickfixlist
-"set cursorline
 set nocursorline
 hi Cursorline cterm=None term=None guibg=NONE cterm=underline,bold
-hi CursorLineNR ctermbg=red ctermfg=white cterm=bold guibg=red guifg=white term=bold
-"set cursorcolumn
-"hi Cursorcolumn cterm=None term=None guibg=NONE
+hi CursorLineNR ctermbg=red ctermfg=white cterm=bold guibg=NONE guifg=gold term=bold
+hi LineNR guifg=darkgray
 
 """""""""""""""""""""""""""""""" statusline """"""""""""""""""""""""""""""""
 hi StatusLine ctermbg=black ctermfg=white 
@@ -717,7 +779,7 @@ function! HighlightSearch(timer)
         let newBG = search(searchString) != 0 ? "green" : "red"
         if searchString == "."
             set whichwrap+=h
-            normal h
+            normal! h
             set whichwrap-=h
         endif
         execute("hi StatusLine ctermfg=" . newBG)
@@ -729,22 +791,29 @@ function! HighlightSearch(timer)
         if exists("g:highlightTimer")
             call timer_stop(g:highlightTimer)
             call HighlightCursorMatch()
+            let g:searchString = "."
             " call timer_start(2000,'UnmatchSearch')
         endif
     endif
 endfunction
 " function! UnmatchSearch(...)
-"     match
+"     let g:searchString = "."
 " endfunction
-function! HighlightCursorMatch() 
+hi MyMatch term=reverse ctermfg=15 ctermbg=9 guifg=Black guibg=White
+hi! link IncSearch MyMatch
+function! HighlightCursorMatch()
     try
-        let l:patt = '\%#'
-        if &ic | let l:patt = '\c' . l:patt | endif
-        exec 'match IncSearch /' . l:patt . g:searchString . '/'
+        if g:searchString!=#"."
+            let l:patt = '\%#'
+            if &ic | let l:patt = '\c' . l:patt | endif
+            exec 'match IncSearch /' . l:patt . @/ . '/'
+        endif
     endtry
 endfunction
-nnoremap n n:call HighlightCursorMatch()<CR>
-nnoremap N N:call HighlightCursorMatch()<CR>
+nnoremap <silent> n :call <SID>contextn(1)<CR>
+" <CR>:call HighlightCursorMatch()<CR>
+nnoremap <silent> N :call <SID>contextn(0)<CR>
+" :call HighlightCursorMatch()<CR>
 augroup betterSeachHighlighting
     autocmd!
     autocmd CmdlineEnter * if (index(['?', '/'], getcmdtype()) >= 0) | let g:searching = 1 | let g:firstCall = 1 | call timer_start(1, 'HighlightSearch') | endif
